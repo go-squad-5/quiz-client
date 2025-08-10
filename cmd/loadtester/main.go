@@ -1,37 +1,40 @@
 package main
 
 import (
+	"fmt"
 	"runtime"
 	"time"
 
-	"github.com/go-squad-5/quiz-load-test/internal/app"
+	application "github.com/go-squad-5/quiz-load-test/internal/app"
 )
 
 func main() {
-	// set the number of go routines
+	// set the number of os threads to use for the simulation
 	runtime.GOMAXPROCS(runtime.NumCPU() - 1)
 
-	// Number of users to simulate
-	numUsers := 1000
+	startTime := time.Now()
 
-  // application
-  application := app.NewApp()
+	app := application.NewApp()
 
-	// Start the user simulation
-	for i := range numUsers {
-		application.Wait.Add(1)
-		go func(userID int) {
-			defer func() {
-				if r := recover(); r != nil {
-					println("Recovered from panic in user", userID, ":", r)
-				}
-				application.Wait.Done()
-			}()
-			// TODO: Add simulation logic here
-			time.Sleep(time.Second * 2)
-		}(i)
-	}
+	app.Listeners.Add(2)
+	go app.ListenForErrors()
+	go app.ListenForResults()
+	app.StartSimulation()
 
-	// Wait for the simulation to complete
-	application.Wait.Wait()
+	app.Wait.Wait()
+	elapsed := time.Since(startTime)
+
+	app.Stop()
+	elapsed2 := time.Since(startTime)
+
+	fmt.Println(
+		"Total time taken to complete all sessions concurrently: ",
+		elapsed.Seconds(),
+		" seconds",
+	)
+	fmt.Println(
+		"Total time taken by test: ",
+		elapsed2.Seconds(),
+		" seconds",
+	)
 }
