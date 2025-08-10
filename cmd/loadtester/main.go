@@ -2,8 +2,9 @@ package main
 
 import (
 	"runtime"
-	"sync"
 	"time"
+
+	"github.com/go-squad-5/quiz-load-test/internal/app"
 )
 
 func main() {
@@ -13,25 +14,24 @@ func main() {
 	// Number of users to simulate
 	numUsers := 1000
 
-	// Create a wait group to wait for all user simulations to complete
-	wg := sync.WaitGroup{}
+  // application
+  application := app.NewApp()
 
 	// Start the user simulation
 	for i := range numUsers {
-		wg.Add(1)
+		application.Wait.Add(1)
 		go func(userID int) {
 			defer func() {
 				if r := recover(); r != nil {
 					println("Recovered from panic in user", userID, ":", r)
 				}
-				wg.Done()
+				application.Wait.Done()
 			}()
-			// Simulate user activity
-			time.Sleep(time.Second * 2)
 			// TODO: Add simulation logic here
+			time.Sleep(time.Second * 2)
 		}(i)
 	}
 
 	// Wait for the simulation to complete
-	wg.Wait()
+	application.Wait.Wait()
 }
