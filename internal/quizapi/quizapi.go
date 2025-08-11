@@ -11,10 +11,11 @@ type QuizAPI struct {
 }
 
 type endpoints struct {
-	createSession string
-	startQuiz     string
-	submitQuiz    string
-	getReport     string
+	createSession  string
+	startQuiz      string
+	submitQuiz     string
+	getReport      string
+	getEmailReport string
 }
 
 func NewQuizAPI(baseUrl, reportServerBaseUrl string) *QuizAPI {
@@ -23,10 +24,11 @@ func NewQuizAPI(baseUrl, reportServerBaseUrl string) *QuizAPI {
 			Timeout: 60 * time.Second,
 		},
 		endpoints: endpoints{
-			createSession: baseUrl + "/session/create",
-			startQuiz:     baseUrl + "/quiz/start",
-			submitQuiz:    baseUrl + "/quiz/submit",
-			getReport:     reportServerBaseUrl + "/generate-pdf",
+			createSession:  baseUrl + "/session/create",
+			startQuiz:      baseUrl + "/quiz/start",
+			submitQuiz:     baseUrl + "/quiz/submit",
+			getReport:      reportServerBaseUrl + "/session/%s/report",
+			getEmailReport: reportServerBaseUrl + "/session/%s/email-report",
 		},
 	}
 }

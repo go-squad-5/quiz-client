@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 
@@ -23,12 +24,12 @@ func (app *App) StartSimulation() {
 func (app *App) SimulateUser(email, topic string) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered from panic in user", email, ":", r)
+			log.Println("Recovered from panic in user", email, ":", r)
 		}
 		app.Wait.Done()
 	}()
 
-	fmt.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
+	log.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
 
 	startTime := time.Now()
 
@@ -107,7 +108,7 @@ func (app *App) SimulateUser(email, topic string) {
 	session.Score = score
 
 	// Get the report for the session
-	report, err := app.QuizAPI.GetReport(ssid, session.UserID) // TODO: check if userID is needed
+	report, err := app.QuizAPI.GetReport(ssid) // TODO: check if userID is needed
 	if err != nil {
 		session.Error = err
 		session.Status = STATUS_FAILED
@@ -128,9 +129,9 @@ func (app *App) SimulateUser(email, topic string) {
 
 func (app *App) FakeUserAction(email, topic string) {
 	defer app.Wait.Done()
-	fmt.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
+	log.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
 	startTime := time.Now()
-	time.Sleep(time.Duration(rand.Intn(2) + 1) * time.Second)
+	time.Sleep(time.Duration(rand.Intn(2)+1) * time.Second)
 	endTime := time.Now()
 
 	app.Results <- &Session{

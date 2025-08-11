@@ -31,6 +31,7 @@ func (app *App) ListenForResults() {
 		logString = logString + "End Time: " + time.Unix(result.EndTime, 0).Format(time.RFC3339) + "\n"
 		logString = logString + "Time Taken: " + strconv.FormatFloat(float64(result.EndTime-result.StartTime)/1000, 'f', 2, 64) + " seconds\n"
 		logString = logString + "Questions-Answers: " + fmt.Sprintf("%v", result.Answers) + "\n"
+		logString = logString + "Report: " + result.Report + "\n"
 		if result.Error != nil {
 			logString = logString + "Error: " + result.Error.Error() + "\n"
 		}

@@ -2,6 +2,8 @@ package quizapi
 
 import (
 	"encoding/base64"
+	"encoding/json"
+
 	// "encoding/json"
 	"fmt"
 	"io"
@@ -21,9 +23,14 @@ type GetReportResponse struct {
 	} `json:"data"`
 }
 
-func (q *QuizAPI) GetReport(sessionID, userId string) (string, error) {
+type GetReportErrorResponse struct {
+	StatusCode int    `json:"statusCode"`
+	Message    string `json:"message"`
+}
+
+func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 	// prepare request
-	reqUrl := fmt.Sprintf("%s?sessionId=%s&userId=%s", q.endpoints.getReport, sessionID, userId)
+	reqUrl := fmt.Sprintf(q.endpoints.getReport, sessionID)
 	req, err := http.NewRequest(http.MethodPost, reqUrl, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -35,24 +42,28 @@ func (q *QuizAPI) GetReport(sessionID, userId string) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to get report, status code: %d", resp.StatusCode)
+		var errorResp GetReportErrorResponse
+		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err != nil {
+			return "", fmt.Errorf("Error fetching the report and failed to parse error response body: %w", err)
+		}
+		return "", fmt.Errorf("failed to get report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
 	}
-
 	defer resp.Body.Close()
 
 	// if binary stream response:
-	reportPath, err := parseBinaryResponse(resp, sessionID)
+	reportPath, err := parseAndSaveBinaryResponse(resp, sessionID)
 	if err != nil {
 		return "", fmt.Errorf("Error handling response: %w", err)
 	}
 
-	// if json - base64 response:
+	// NOTE: if json - base64 response:
+	//
 	// var reportResp GetReportResponse
 	// if err := json.NewDecoder(resp.Body).Decode(&reportResp); err != nil {
 	// 	return "", fmt.Errorf("failed to parse response body: %w", err)
 	// }
 	//
-	//  reportPath, err := parseBase64Response(reportResp.Data.ContentBase64, sessionID)
+	//  reportPath, err := parseAndSaveBase64Response(reportResp.Data.ContentBase64, sessionID)
 	// if err != nil {
 	// 	return "", fmt.Errorf("failed to parse base64 response: %w", err)
 	// }
@@ -60,7 +71,7 @@ func (q *QuizAPI) GetReport(sessionID, userId string) (string, error) {
 	return reportPath, nil
 }
 
-func parseBase64Response(base64String, sessionId string) (string, error) {
+func parseAndSaveBase64Response(base64String, sessionId string) (string, error) {
 	filePath := fmt.Sprintf("./tmp/%s/report.pdf", sessionId)
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -79,7 +90,7 @@ func parseBase64Response(base64String, sessionId string) (string, error) {
 	return filePath, nil
 }
 
-func parseBinaryResponse(resp *http.Response, sessionId string) (string, error) {
+func parseAndSaveBinaryResponse(resp *http.Response, sessionId string) (string, error) {
 	filePath := fmt.Sprintf("./tmp/%s/report.pdf", sessionId)
 	file, err := os.Create(filePath)
 	if err != nil {

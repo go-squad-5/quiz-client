@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"runtime"
 	"time"
 
@@ -30,12 +30,12 @@ func main() {
 	app.Stop()
 	elapsed2 := time.Since(startTime)
 
-	fmt.Println(
+	log.Println(
 		"Total time taken to complete all sessions concurrently: ",
 		elapsed.Seconds(),
 		" seconds",
 	)
-	fmt.Println(
+	log.Println(
 		"Total time taken by test: ",
 		elapsed2.Seconds(),
 		" seconds",
