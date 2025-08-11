@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	// "encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,7 +30,7 @@ type GetReportErrorResponse struct {
 func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 	// prepare request
 	reqUrl := fmt.Sprintf(q.endpoints.getReport, sessionID)
-	req, err := http.NewRequest(http.MethodPost, reqUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, reqUrl, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -43,14 +42,14 @@ func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
-    if err != nil {
-      return "", fmt.Errorf("failed to read error response body: %w", err)
-    }
-		fmt.Println("Response body:", string(body))
+		if err != nil {
+			return "", fmt.Errorf("failed to read error response body: %w", err)
+		}
+		fmt.Println("Status Code:", resp.StatusCode, " Response body:", string(body))
 		var errorResp GetReportErrorResponse
-    if err := json.Unmarshal(body, &errorResp); err != nil {
-      return "", fmt.Errorf("failed to parse error response: %w", err)
-    }
+		if err := json.Unmarshal(body, &errorResp); err != nil {
+			return "", fmt.Errorf("failed to parse error response: %w", err)
+		}
 		return "", fmt.Errorf("failed to get report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
 	}
 	defer resp.Body.Close()
@@ -77,16 +76,9 @@ func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 }
 
 func parseAndSaveBase64Response(base64String, sessionId string) (string, error) {
-	// make directory if not exists
 	// create a tmp directory if it doesn't exist
-	if _, err := os.Stat("./tmp"); os.IsNotExist(err) {
-		err := os.Mkdir("./tmp", 0755)
-		if err != nil {
-			panic("Failed to create tmp directory: " + err.Error())
-		}
-	}
 	if _, err := os.Stat("./tmp/reports"); os.IsNotExist(err) {
-		err := os.Mkdir("./tmp/reports", 0755)
+		err := os.MkdirAll("./tmp/reports", 0755)
 		if err != nil {
 			panic("Failed to create tmp/reports directory: " + err.Error())
 		}
@@ -110,6 +102,13 @@ func parseAndSaveBase64Response(base64String, sessionId string) (string, error) 
 }
 
 func parseAndSaveBinaryResponse(resp *http.Response, sessionId string) (string, error) {
+	// create a tmp directory if it doesn't exist
+	if _, err := os.Stat("./tmp/reports"); os.IsNotExist(err) {
+		err := os.MkdirAll("./tmp/reports", 0755)
+		if err != nil {
+			panic("Failed to create tmp/reports directory: " + err.Error())
+		}
+	}
 	filePath := fmt.Sprintf("./tmp/reports/%s_report.pdf", sessionId)
 	file, err := os.Create(filePath)
 	if err != nil {

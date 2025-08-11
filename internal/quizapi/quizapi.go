@@ -27,8 +27,8 @@ func NewQuizAPI(baseUrl, reportServerBaseUrl string) *QuizAPI {
 			createSession:  baseUrl + "/session/create",
 			startQuiz:      baseUrl + "/quiz/start",
 			submitQuiz:     baseUrl + "/quiz/submit",
-			getReport:      reportServerBaseUrl + "/session/%s/report",
-			getEmailReport: reportServerBaseUrl + "/session/%s/email-report",
+			getReport:      reportServerBaseUrl + "/sessions/%s/report",
+			getEmailReport: reportServerBaseUrl + "/sessions/%s/email-report",
 		},
 	}
 }
