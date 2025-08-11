@@ -83,6 +83,7 @@ func (app *App) SimulateUser(email, topic string) {
 			Topic: topic,
 			err:   err,
 		}
+		return
 	}
 
 	session.Question = questions

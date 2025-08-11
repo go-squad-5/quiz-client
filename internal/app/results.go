@@ -8,7 +8,7 @@ import (
 )
 
 func (app *App) ListenForResults() {
-	defer app.Listeners.Done()
+	defer app.ResultListener.Done()
 
 	file := openResultsFile()
 	defer file.Close()

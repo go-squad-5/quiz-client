@@ -16,9 +16,12 @@ func main() {
 
 	app := application.NewApp()
 
-	app.Listeners.Add(2)
+	app.ErrorListener.Add(1)
 	go app.ListenForErrors()
+
+	app.ResultListener.Add(1)
 	go app.ListenForResults()
+
 	app.StartSimulation()
 
 	app.Wait.Wait()
