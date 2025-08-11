@@ -42,10 +42,15 @@ func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+    if err != nil {
+      return "", fmt.Errorf("failed to read error response body: %w", err)
+    }
+		fmt.Println("Response body:", string(body))
 		var errorResp GetReportErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err != nil {
-			return "", fmt.Errorf("Error fetching the report and failed to parse error response body: %w", err)
-		}
+    if err := json.Unmarshal(body, &errorResp); err != nil {
+      return "", fmt.Errorf("failed to parse error response: %w", err)
+    }
 		return "", fmt.Errorf("failed to get report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
 	}
 	defer resp.Body.Close()

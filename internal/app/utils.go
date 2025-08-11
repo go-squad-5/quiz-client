@@ -34,7 +34,7 @@ var EMAILS []string = []string{
 }
 
 var TOPICS []string = []string{
-	"golang",
+	"go",
 	"java",
 	"python",
 	"c",
@@ -42,23 +42,9 @@ var TOPICS []string = []string{
 	"zig",
 	"rust",
 	"ocaml",
-	"csharp",
 	"javascript",
-	"typescript",
 	"ruby",
-	"php",
-	"rust",
 	"kotlin",
-	"swift",
-	"scala",
-	"elixir",
-	"haskell",
-	"clojure",
-	"perl",
 	"lua",
-	"dart",
-	"julia",
-	"objective-c",
-	"groovy",
 	"shell",
 }

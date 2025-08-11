@@ -70,7 +70,7 @@ func (app *App) SimulateUser(email, topic string) {
 
 	// Start the quiz , get questions
 	startQuizStart := time.Now()
-	questions, err := app.QuizAPI.StartQuiz(ssid)
+	questions, err := app.QuizAPI.StartQuiz(ssid, topic)
 	startQuizEnd := time.Now()
 	aPIsTimeTaken.StartQuiz = startQuizEnd.UnixMilli() - startQuizStart.UnixMilli()
 	if err != nil {

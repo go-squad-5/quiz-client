@@ -9,6 +9,7 @@ import (
 
 type StartQuizRequest struct {
 	SessionID string `json:"ssid"`
+	Topic     string `json:"topic"`
 }
 
 type StartQuizResponse struct {
@@ -22,13 +23,17 @@ type Question struct {
 	Options  []string `json:"options"`
 }
 
-func (q *QuizAPI) StartQuiz(sessionId string) ([]Question, error) {
+func (q *QuizAPI) StartQuiz(sessionId, topic string) ([]Question, error) {
 	// Prepare Request
 	req := StartQuizRequest{
 		SessionID: sessionId,
+		Topic:     topic,
 	}
 	if req.SessionID == "" {
 		return nil, fmt.Errorf("SessionID is required")
+	}
+	if req.Topic == "" {
+		return nil, fmt.Errorf("Topic is required")
 	}
 
 	body, err := json.Marshal(req)

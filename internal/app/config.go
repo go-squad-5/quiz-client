@@ -25,11 +25,11 @@ func LoadConfig() *Config {
 	// load configurations from environment variables
 	baseUrl := os.Getenv("BASE_URL")
 	if baseUrl == "" {
-		baseUrl = "http://localhost:3000"
+		baseUrl = "http://localhost:8080"
 	}
 	reportServerBaseUrl := os.Getenv("REPORT_SERVER_BASEURL")
 	if reportServerBaseUrl == "" {
-		reportServerBaseUrl = "http://localhost:3002"
+		reportServerBaseUrl = "http://localhost:8070"
 	}
 	numUsers := os.Getenv("NUM_USERS")
 	if numUsers == "" {
