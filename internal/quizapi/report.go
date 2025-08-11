@@ -22,7 +22,7 @@ type GetReportResponse struct {
 }
 
 func (q *QuizAPI) GetReport(sessionID, userId string) (string, error) {
-  // prepare request
+	// prepare request
 	reqUrl := fmt.Sprintf("%s?sessionId=%s&userId=%s", q.endpoints.getReport, sessionID, userId)
 	req, err := http.NewRequest(http.MethodPost, reqUrl, nil)
 	if err != nil {

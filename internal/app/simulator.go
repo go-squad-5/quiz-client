@@ -15,7 +15,8 @@ func (app *App) StartSimulation() {
 		email := EMAILS[i%numEmails]
 		topic := TOPICS[i%numTopics]
 		app.Wait.Add(1)
-		go app.SimulateUser(email, topic)
+		go app.FakeUserAction(email, topic)
+		// go app.SimulateUser(email, topic)
 	}
 }
 
@@ -30,23 +31,6 @@ func (app *App) SimulateUser(email, topic string) {
 	fmt.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
 
 	startTime := time.Now()
-
-	// -------------------------------------
-	// // Fake Simulation of user action
-	// app.FakeUserAction(email, topic)
-	// endTime := time.Now()
-	//
-	// app.Results <- &Session{
-	// 	ID:        "somereandomstring",
-	// 	UserID:    "user_" + email,
-	// 	Email:     email,
-	// 	Topic:     topic,
-	// 	Status:    STATUS_COMPLETED,
-	// 	StartTime: startTime.Unix(),
-	// 	EndTime:   endTime.Unix(),
-	// }
-	// return
-	// -------------------------------------
 
 	// Create a session
 	ssid, err := app.QuizAPI.CreateSession(email, topic)
@@ -143,5 +127,19 @@ func (app *App) SimulateUser(email, topic string) {
 }
 
 func (app *App) FakeUserAction(email, topic string) {
-	time.Sleep(1 * time.Second)
+	defer app.Wait.Done()
+	fmt.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
+	startTime := time.Now()
+	time.Sleep(time.Duration(rand.Intn(2) + 1) * time.Second)
+	endTime := time.Now()
+
+	app.Results <- &Session{
+		ID:        "somereandomstring",
+		UserID:    "user_" + email,
+		Email:     email,
+		Topic:     topic,
+		Status:    STATUS_COMPLETED,
+		StartTime: startTime.Unix(),
+		EndTime:   endTime.Unix(),
+	}
 }
