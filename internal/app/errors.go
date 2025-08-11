@@ -25,11 +25,7 @@ func (app *App) ListenForErrors() {
 	for err := range app.Errors {
 		if sessionErr, ok := err.(*SessionError); ok {
 			// Handle session-specific errors
-			app.Results <- &Session{
-				ID:     sessionErr.Session.ID,
-				Status: STATUS_FAILED,
-				Error:  err,
-			}
+			app.Results <- sessionErr.Session
 		} else if startErr, ok := err.(*StartSessionError); ok {
 			// Handle start session errors
 			app.Results <- &Session{

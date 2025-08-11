@@ -16,8 +16,8 @@ func (app *App) StartSimulation() {
 		email := EMAILS[i%numEmails]
 		topic := TOPICS[i%numTopics]
 		app.Wait.Add(1)
-		go app.FakeUserAction(email, topic)
-		// go app.SimulateUser(email, topic)
+		// go app.FakeUserAction(email, topic)
+		go app.SimulateUser(email, topic)
 	}
 }
 
@@ -77,10 +77,8 @@ func (app *App) SimulateUser(email, topic string) {
 		session.Error = err
 		session.Status = STATUS_FAILED
 		session.EndTime = time.Now().UnixMilli()
-		app.Errors <- &StartSessionError{
-			Email: email,
-			Topic: topic,
-			err:   err,
+		app.Errors <- &SessionError{
+			Session: session,
 		}
 		return
 	}
