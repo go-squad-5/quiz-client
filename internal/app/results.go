@@ -27,13 +27,23 @@ func (app *App) ListenForResults() {
 		logString = logString + "User ID: " + result.UserID + "\n"
 		logString = logString + "Score: " + strconv.Itoa(result.Score) + "\n"
 		logString = logString + "Status: " + string(result.Status) + "\n"
-		logString = logString + "Start Time: " + time.Unix(result.StartTime, 0).Format(time.RFC3339) + "\n"
-		logString = logString + "End Time: " + time.Unix(result.EndTime, 0).Format(time.RFC3339) + "\n"
-		logString = logString + "Time Taken: " + strconv.FormatFloat(float64(result.EndTime-result.StartTime)/1000, 'f', 2, 64) + " seconds\n"
+		logString = logString + "Start Time: " + time.UnixMilli(result.StartTime).Format(time.RFC3339) + "\n"
+		logString = logString + "End Time: " + time.UnixMilli(result.EndTime).Format(time.RFC3339) + "\n"
+		logString = logString + "Time Taken: " + strconv.FormatInt(result.EndTime-result.StartTime, 10) + " ms\n"
 		logString = logString + "Questions-Answers: " + fmt.Sprintf("%v", result.Answers) + "\n"
 		logString = logString + "Report: " + result.Report + "\n"
 		if result.Error != nil {
 			logString = logString + "Error: " + result.Error.Error() + "\n"
+		}
+		if result.APIsTimeTaken != nil {
+			logString = logString + "APIs Time Taken:\n"
+			logString = logString + "Session Creation: " + strconv.FormatInt(result.APIsTimeTaken.SessionCreation, 10) + " ms\n"
+			logString = logString + "Start Quiz: " + strconv.FormatInt(result.APIsTimeTaken.StartQuiz, 10) + " ms\n"
+			logString = logString + "Submit Quiz: " + strconv.FormatInt(result.APIsTimeTaken.SubmitQuiz, 10) + " ms\n"
+			logString = logString + "Report API: " + strconv.FormatInt(result.APIsTimeTaken.ReportAPI, 10) + " ms\n"
+			logString = logString + "Email API: " + strconv.FormatInt(result.APIsTimeTaken.EmailAPI, 10) + " ms\n"
+		} else {
+			logString = logString + "APIs Time Taken: Not available\n"
 		}
 		logString = logString + "-----------------------------------------------\n"
 
@@ -56,8 +66,8 @@ func (app *App) ListenForResults() {
 	averageTime := float64(total) / float64(len(timetaken))
 	summary := "-----------------------------------------------\n"
 	summary += "Total Sessions: " + strconv.Itoa(app.Config.NumUsers) + "\n"
-	summary += "Average Time Taken per session: " + strconv.FormatFloat(averageTime, 'f', 2, 64) + " seconds\n"
-	summary += "Check ./tmp/results.txt for all logs\n"
+	summary += "Average Time Taken per session: " + strconv.FormatFloat(averageTime, 'f', 2, 64) + " milliseconds\n"
+	summary += "Check ./tmp/logs.txt for all logs\n"
 	summary += "-----------------------------------------------\n"
 	fmt.Print(summary)
 
@@ -69,7 +79,6 @@ func (app *App) ListenForResults() {
 }
 
 func openResultsFile() *os.File {
-	// open the results file
 	// create a tmp directory if it doesn't exist
 	if _, err := os.Stat("./tmp"); os.IsNotExist(err) {
 		err := os.Mkdir("./tmp", 0755)
@@ -77,7 +86,8 @@ func openResultsFile() *os.File {
 			panic("Failed to create tmp directory: " + err.Error())
 		}
 	}
-	file, err := os.Create("./tmp/results.txt")
+	// open the results file
+	file, err := os.Create("./tmp/logs.txt")
 	if err != nil {
 		panic("Failed to create results file: " + err.Error())
 	}

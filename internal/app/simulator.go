@@ -34,7 +34,9 @@ func (app *App) SimulateUser(email, topic string) {
 	startTime := time.Now()
 
 	// Create a session
+	createStart := time.Now()
 	ssid, err := app.QuizAPI.CreateSession(email, topic)
+	createEnd := time.Now()
 	if err != nil {
 		app.Errors <- &StartSessionError{
 			Email: email,
@@ -44,25 +46,37 @@ func (app *App) SimulateUser(email, topic string) {
 		return
 	}
 
+	aPIsTimeTaken := &APIsTimeTaken{
+		SessionCreation: createEnd.UnixMilli() - createStart.UnixMilli(),
+		StartQuiz:       0,
+		SubmitQuiz:      0,
+		ReportAPI:       0,
+		EmailAPI:        0,
+	}
+
 	session := &Session{
-		ID:        ssid,
-		UserID:    "user_" + email,
-		Email:     email,
-		Topic:     topic,
-		Status:    STATUS_STARTED,
-		StartTime: startTime.Unix(),
-		EndTime:   0,
-		Answers:   []quizapi.Answer{},
-		Score:     0,
-		CreatedAt: startTime.Unix(),
+		ID:            ssid,
+		UserID:        "user_" + email,
+		Email:         email,
+		Topic:         topic,
+		Status:        STATUS_STARTED,
+		StartTime:     startTime.UnixMilli(),
+		EndTime:       0,
+		Answers:       []quizapi.Answer{},
+		Score:         0,
+		CreatedAt:     startTime.Unix(),
+		APIsTimeTaken: aPIsTimeTaken,
 	}
 
 	// Start the quiz , get questions
+	startQuizStart := time.Now()
 	questions, err := app.QuizAPI.StartQuiz(ssid)
+	startQuizEnd := time.Now()
+	aPIsTimeTaken.StartQuiz = startQuizEnd.UnixMilli() - startQuizStart.UnixMilli()
 	if err != nil {
 		session.Error = err
 		session.Status = STATUS_FAILED
-		session.EndTime = time.Now().Unix()
+		session.EndTime = time.Now().UnixMilli()
 		app.Errors <- &StartSessionError{
 			Email: email,
 			Topic: topic,
@@ -79,7 +93,7 @@ func (app *App) SimulateUser(email, topic string) {
 		if numOptions == 0 {
 			session.Error = fmt.Errorf("no options available for question ID: %s", question.ID)
 			session.Status = STATUS_FAILED
-			session.EndTime = time.Now().Unix()
+			session.EndTime = time.Now().UnixMilli()
 			app.Errors <- &SessionError{
 				Session: session,
 			}
@@ -93,11 +107,14 @@ func (app *App) SimulateUser(email, topic string) {
 	}
 
 	// Submit the quiz with answers
+	submitStart := time.Now()
 	score, err := app.QuizAPI.SubmitQuiz(ssid, session.Answers)
+	submitEnd := time.Now()
+	aPIsTimeTaken.SubmitQuiz = submitEnd.UnixMilli() - submitStart.UnixMilli()
 	if err != nil {
 		session.Status = STATUS_FAILED
 		session.Error = err
-		session.EndTime = time.Now().Unix()
+		session.EndTime = time.Now().UnixMilli()
 		app.Errors <- &SessionError{
 			Session: session,
 		}
@@ -108,11 +125,14 @@ func (app *App) SimulateUser(email, topic string) {
 	session.Score = score
 
 	// Get the report for the session
-	report, err := app.QuizAPI.GetReport(ssid) // TODO: check if userID is needed
+	reportStart := time.Now()
+	report, err := app.QuizAPI.GetReport(ssid)
+	reportEnd := time.Now()
+	aPIsTimeTaken.ReportAPI = reportEnd.UnixMilli() - reportStart.UnixMilli()
 	if err != nil {
 		session.Error = err
 		session.Status = STATUS_FAILED
-		session.EndTime = time.Now().Unix()
+		session.EndTime = time.Now().UnixMilli()
 		app.Errors <- &SessionError{
 			Session: session,
 		}
@@ -120,8 +140,23 @@ func (app *App) SimulateUser(email, topic string) {
 	}
 	session.Report = report
 
+	// Do email request
+	emailStart := time.Now()
+	_, err = app.QuizAPI.GetEmailReport(ssid)
+	emailEnd := time.Now()
+	session.APIsTimeTaken.EmailAPI = emailEnd.UnixMilli() - emailStart.UnixMilli()
+	if err != nil {
+		session.Error = err
+		session.Status = STATUS_FAILED
+		session.EndTime = time.Now().UnixMilli()
+		app.Errors <- &SessionError{
+			Session: session,
+		}
+		return
+	}
+
 	endTime := time.Now()
-	session.EndTime = endTime.Unix()
+	session.EndTime = endTime.UnixMilli()
 	session.Status = STATUS_COMPLETED
 
 	app.Results <- session
@@ -140,7 +175,7 @@ func (app *App) FakeUserAction(email, topic string) {
 		Email:     email,
 		Topic:     topic,
 		Status:    STATUS_COMPLETED,
-		StartTime: startTime.Unix(),
-		EndTime:   endTime.Unix(),
+		StartTime: startTime.UnixMilli(),
+		EndTime:   endTime.UnixMilli(),
 	}
 }

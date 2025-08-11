@@ -72,7 +72,21 @@ func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 }
 
 func parseAndSaveBase64Response(base64String, sessionId string) (string, error) {
-	filePath := fmt.Sprintf("./tmp/%s/report.pdf", sessionId)
+	// make directory if not exists
+	// create a tmp directory if it doesn't exist
+	if _, err := os.Stat("./tmp"); os.IsNotExist(err) {
+		err := os.Mkdir("./tmp", 0755)
+		if err != nil {
+			panic("Failed to create tmp directory: " + err.Error())
+		}
+	}
+	if _, err := os.Stat("./tmp/reports"); os.IsNotExist(err) {
+		err := os.Mkdir("./tmp/reports", 0755)
+		if err != nil {
+			panic("Failed to create tmp/reports directory: " + err.Error())
+		}
+	}
+	filePath := fmt.Sprintf("./tmp/reports/%s_report.pdf", sessionId)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %w", err)
@@ -91,7 +105,7 @@ func parseAndSaveBase64Response(base64String, sessionId string) (string, error) 
 }
 
 func parseAndSaveBinaryResponse(resp *http.Response, sessionId string) (string, error) {
-	filePath := fmt.Sprintf("./tmp/%s/report.pdf", sessionId)
+	filePath := fmt.Sprintf("./tmp/reports/%s_report.pdf", sessionId)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %w", err)
