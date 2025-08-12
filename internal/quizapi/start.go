@@ -18,7 +18,7 @@ type StartQuizResponse struct {
 }
 
 type Question struct {
-	ID       string   `json:"que_id"`
+	ID       string   `json:"ques_id"`
 	Question string   `json:"question"`
 	Options  []string `json:"options"`
 }
