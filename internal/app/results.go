@@ -64,7 +64,7 @@ func (app *App) ListenForResults() {
 	}
 
 	averageTime := float64(total) / float64(len(timetaken))
-	summary := "-----------------------------------------------\n"
+	summary := "-------------------RESULTS--------------------\n"
 	summary += "Total Sessions: " + strconv.Itoa(app.Config.NumUsers) + "\n"
 	summary += "Average Time Taken per session: " + strconv.FormatFloat(averageTime, 'f', 2, 64) + " milliseconds\n"
 	summary += "Check ./tmp/logs.txt for all logs\n"

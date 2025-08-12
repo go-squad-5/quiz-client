@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"runtime"
 	"time"
 
@@ -17,11 +16,14 @@ func main() {
 	app := application.NewApp()
 
 	app.ErrorListener.Add(1)
+	app.InfoLogger.Println("GO ROUTINE Started for listening to errors")
 	go app.ListenForErrors()
 
 	app.ResultListener.Add(1)
+	app.InfoLogger.Println("GO ROUTINE Started for listening to results")
 	go app.ListenForResults()
 
+	app.InfoLogger.Println("Starting simulation with", app.Config.NumUsers, "users")
 	app.StartSimulation()
 
 	app.Wait.Wait()
@@ -30,12 +32,12 @@ func main() {
 	app.Stop()
 	elapsed2 := time.Since(startTime)
 
-	log.Println(
+	app.ResultLogger.Println(
 		"Total time taken to complete all sessions concurrently: ",
 		elapsed.Seconds(),
 		" seconds",
 	)
-	log.Println(
+	app.ResultLogger.Println(
 		"Total time taken by test: ",
 		elapsed2.Seconds(),
 		" seconds",
