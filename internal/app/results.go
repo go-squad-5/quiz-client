@@ -9,6 +9,7 @@ import (
 
 func (app *App) ListenForResults() {
 	defer app.ResultListener.Done()
+	defer app.InfoLogger.Println("GO ROUTINE FINISHED for listening to results")
 
 	file := openResultsFile()
 	defer file.Close()

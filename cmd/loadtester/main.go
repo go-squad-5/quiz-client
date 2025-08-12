@@ -16,11 +16,11 @@ func main() {
 	app := application.NewApp()
 
 	app.ErrorListener.Add(1)
-	app.InfoLogger.Println("GO ROUTINE Started for listening to errors")
+	app.InfoLogger.Println("GO ROUTINE STARTED for listening to errors")
 	go app.ListenForErrors()
 
 	app.ResultListener.Add(1)
-	app.InfoLogger.Println("GO ROUTINE Started for listening to results")
+	app.InfoLogger.Println("GO ROUTINE STARTED for listening to results")
 	go app.ListenForResults()
 
 	app.InfoLogger.Println("Starting simulation with", app.Config.NumUsers, "users")

@@ -22,6 +22,7 @@ func (e *StartSessionError) Error() string {
 
 func (app *App) ListenForErrors() {
 	defer app.ErrorListener.Done()
+	defer app.InfoLogger.Println("GO ROUTINE FINISHED for listening to errors")
 	for err := range app.Errors {
 		if sessionErr, ok := err.(*SessionError); ok {
 			// Handle session-specific errors

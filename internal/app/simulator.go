@@ -26,9 +26,9 @@ func (app *App) StartSimulation() {
 func (app *App) SimulateUser(email, topic string) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("Recovered from panic in user", email, ":", r)
+			app.ErrorLogger.Println("Recovered from panic in user", email, ":", r)
 		}
-		app.InfoLogger.Println("GO ROUTINE finished for user simulation:", email, "on topic:", topic)
+		app.InfoLogger.Println("GO ROUTINE FINISHED for user simulation:", email, "on topic:", topic)
 		app.Wait.Done()
 	}()
 
@@ -142,7 +142,7 @@ func (app *App) SimulateUser(email, topic string) {
 	app.InfoLogger.Println("GO ROUTINE Started to get report for session ID:", ssid)
 	go func() {
 		defer wg.Done()
-		defer app.InfoLogger.Println("GO ROUTINE finished for getting report for session ID:", ssid)
+		defer app.InfoLogger.Println("GO ROUTINE FINISHED for getting report for session ID:", ssid)
 		// Get the report for the session
 		app.InfoLogger.Println("Sending Request to get report for session ID:", ssid)
 		reportStart := time.Now()
@@ -164,16 +164,16 @@ func (app *App) SimulateUser(email, topic string) {
 	}()
 
 	wg.Add(1)
-	app.InfoLogger.Println("Starting GO ROUTINE to get email report for session ID:", ssid)
+	app.InfoLogger.Println("GO ROUTINE Started to get email report for session ID:", ssid)
 	go func() {
 		defer wg.Done()
-		defer app.InfoLogger.Println("GO ROUTINE finished for getting email report for session ID:", ssid)
+		defer app.InfoLogger.Println("GO ROUTINE FINISHED for getting email report for session ID:", ssid)
 		// Do email request
 		app.InfoLogger.Println("Sending Request to get email report for session ID:", ssid)
 		emailStart := time.Now()
 		_, err = app.QuizAPI.GetEmailReport(ssid)
 		emailEnd := time.Now()
-		app.InfoLogger.Printf("Email report request sent for session ID: %s\n", ssid)
+    app.InfoLogger.Printf("Email Request Successful for session ID: %s\n", ssid)
 		session.APIsTimeTaken.EmailAPI = emailEnd.UnixMilli() - emailStart.UnixMilli()
 		if err != nil {
 			session.Error = err
