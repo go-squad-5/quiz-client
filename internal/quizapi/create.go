@@ -4,30 +4,26 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
-type CreateSessionRequest struct {
+type CreateSessionAPIRequest struct {
 	Email string `json:"email"`
 	Topic string `json:"topic"`
 }
 
-type CreateSessionResponse struct {
+type CreateSessionAPIResponse struct {
 	SessionID string `json:"session_id"`
 	Message   string `json:"message"`
 }
 
 func (q *QuizAPI) CreateSession(email, topic string) (string, error) {
-	// prepare the request
-	req := CreateSessionRequest{
-		Email: email,
-		Topic: topic,
-	}
-	if req.Email == "" || req.Topic == "" {
-		return "", fmt.Errorf("email and topic are required")
+	if err := validateCreateSessionInputs(email, topic); err != nil {
+		return "", err
 	}
 
-	body, err := json.Marshal(req)
+	body, err := buildCreateSessionAPIRequest(email, topic)
 	if err != nil {
 		return "", err
 	}
@@ -36,20 +32,49 @@ func (q *QuizAPI) CreateSession(email, topic string) (string, error) {
 	resp, err := q.client.Post(
 		q.endpoints.createSession,
 		"application/json",
-		bytes.NewBuffer(body),
+		body,
 	)
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to create session, status code: %d", resp.StatusCode)
+	if err = validateCreateSessionAPIResponseStatus(resp); err != nil {
+		return "", err
 	}
 
-	// decode the response
-	defer resp.Body.Close()
-	var response CreateSessionResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	return parseCreateSessionAPIResponse(resp.Body)
+}
+
+func validateCreateSessionInputs(email, topic string) error {
+	if email == "" || topic == "" {
+		return fmt.Errorf("email and topic are required")
+	}
+	return nil
+}
+
+func buildCreateSessionAPIRequest(email, topic string) (*bytes.Buffer, error) {
+	req := CreateSessionAPIRequest{
+		Email: email,
+		Topic: topic,
+	}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewBuffer(body), nil
+}
+
+func validateCreateSessionAPIResponseStatus(resp *http.Response) error {
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to create session, status code: %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func parseCreateSessionAPIResponse(body io.ReadCloser) (string, error) {
+	var response CreateSessionAPIResponse
+	if err := json.NewDecoder(body).Decode(&response); err != nil {
 		return "", fmt.Errorf("failed to decode response: %v", err)
 	}
 

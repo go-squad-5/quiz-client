@@ -28,97 +28,102 @@ type GetReportErrorResponse struct {
 }
 
 func (q *QuizAPI) GetReport(sessionID string) (string, error) {
-	// prepare request
-	reqUrl := fmt.Sprintf(q.endpoints.getReport, sessionID)
-	req, err := http.NewRequest(http.MethodGet, reqUrl, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
+	reqUrl := buildGetReportAPIURL(q.endpoints.getReport, sessionID)
 
-	resp, err := q.client.Do(req)
+	resp, err := q.client.Get(reqUrl)
 	if err != nil {
 		return "", fmt.Errorf("failed to get report: %w", err)
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return "", fmt.Errorf("failed to read error response body: %w", err)
-		}
-		fmt.Println("Status Code:", resp.StatusCode, " Response body:", string(body))
-		var errorResp GetReportErrorResponse
-		if err := json.Unmarshal(body, &errorResp); err != nil {
-			return "", fmt.Errorf("failed to parse error response: %w", err)
-		}
-		return "", fmt.Errorf("failed to get report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
-	}
 	defer resp.Body.Close()
 
-	// if binary stream response:
-	reportPath, err := parseAndSaveBinaryResponse(resp, sessionID)
-	if err != nil {
-		return "", fmt.Errorf("Error handling response: %w", err)
+	if err := validateGetReportResponseStatus(resp); err != nil {
+		err = parseGetReportErrorResponse(resp.Body)
+		return "", err
 	}
 
-	// NOTE: if json - base64 response:
-	//
-	// var reportResp GetReportResponse
-	// if err := json.NewDecoder(resp.Body).Decode(&reportResp); err != nil {
-	// 	return "", fmt.Errorf("failed to parse response body: %w", err)
-	// }
-	//
-	//  reportPath, err := parseAndSaveBase64Response(reportResp.Data.ContentBase64, sessionID)
-	// if err != nil {
-	// 	return "", fmt.Errorf("failed to parse base64 response: %w", err)
-	// }
+	file, filePath, err := openSessionReportFile(sessionID)
+	if err != nil {
+		return "", fmt.Errorf("failed to open session report file: %w", err)
+	}
+	defer file.Close()
 
-	return reportPath, nil
+	if err := parseAndSaveBinaryResponse(resp, file); err != nil {
+		return "", err
+	}
+
+	return filePath, nil
 }
 
-func parseAndSaveBase64Response(base64String, sessionId string) (string, error) {
+func buildGetReportAPIURL(endpoint, sessionID string) string {
+	return fmt.Sprintf(endpoint, sessionID)
+}
+
+func validateGetReportResponseStatus(resp *http.Response) error {
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get report, status code: %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func parseGetReportErrorResponse(body io.ReadCloser) error {
+	var errorResp GetReportErrorResponse
+	if err := json.NewDecoder(body).Decode(&errorResp); err != nil {
+		return fmt.Errorf("failed to parse error response body: %w", err)
+	}
+	return fmt.Errorf("failed to get report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
+}
+
+func openSessionReportFile(sessionId string) (*os.File, string, error) {
 	// create a tmp directory if it doesn't exist
 	if _, err := os.Stat("./tmp/reports"); os.IsNotExist(err) {
 		err := os.MkdirAll("./tmp/reports", 0755)
 		if err != nil {
-			panic("Failed to create tmp/reports directory: " + err.Error())
+			return nil, "", fmt.Errorf("failed to create tmp/reports directory: %w", err)
 		}
 	}
+
 	filePath := fmt.Sprintf("./tmp/reports/%s_report.pdf", sessionId)
 	file, err := os.Create(filePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to create file: %w", err)
+		return nil, "", fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
 
+	return file, filePath, nil
+}
+
+func parseAndSaveBinaryResponse(resp *http.Response, file *os.File) error {
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+	return nil
+}
+
+// NOTE: if json - base64 response (as per API docs, we have two possible response formats)
+//
+// respJson, err := parseJsonGetReportResponse(resp.Body)
+// if err != nil {
+//   return "", fmt.Errorf("failed to parse JSON response: %w", err)
+// }
+//
+// if err := parseAndSaveBase64Response(respJson.Data.ContentBase64, file); err != nil {
+// 	 return "", fmt.Errorf("failed to parse base64 response: %w", err)
+// }
+
+func parseJsonGetReportResponse(respBody io.ReadCloser) (GetReportResponse, error) {
+	var reportResp GetReportResponse
+	if err := json.NewDecoder(respBody).Decode(&reportResp); err != nil {
+		return GetReportResponse{}, fmt.Errorf("failed to parse response body: %w", err)
+	}
+	return reportResp, nil
+}
+
+func parseAndSaveBase64Response(base64String string, file *os.File) error {
 	binaryData, err := base64.StdEncoding.DecodeString(base64String)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode base64 string: %w", err)
+		return fmt.Errorf("failed to decode base64 string: %w", err)
 	}
 	if _, err := file.Write(binaryData); err != nil {
-		return "", fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write file: %w", err)
 	}
-
-	return filePath, nil
-}
-
-func parseAndSaveBinaryResponse(resp *http.Response, sessionId string) (string, error) {
-	// create a tmp directory if it doesn't exist
-	if _, err := os.Stat("./tmp/reports"); os.IsNotExist(err) {
-		err := os.MkdirAll("./tmp/reports", 0755)
-		if err != nil {
-			panic("Failed to create tmp/reports directory: " + err.Error())
-		}
-	}
-	filePath := fmt.Sprintf("./tmp/reports/%s_report.pdf", sessionId)
-	file, err := os.Create(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to create file: %w", err)
-	}
-
-	defer file.Close()
-	if _, err := io.Copy(file, resp.Body); err != nil {
-		return "", fmt.Errorf("failed to write file: %w", err)
-	}
-
-	return filePath, nil
+	return nil
 }

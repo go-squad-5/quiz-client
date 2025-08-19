@@ -39,6 +39,7 @@ func LoadConfig() *Config {
 	// trim trailing slashes
 	baseUrl = strings.TrimSuffix(baseUrl, "/")
 	reportServerBaseUrl = strings.TrimSuffix(reportServerBaseUrl, "/")
+
 	// convert numUsers to int
 	numUsersInt, err := strconv.Atoi(numUsers)
 	if err != nil {

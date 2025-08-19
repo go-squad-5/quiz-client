@@ -3,35 +3,48 @@ package quizapi
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
-type GetEmailReportResponse struct {
+type GetEmailReportErrorResponse struct {
 	Message    string `json:"message"`
 	StatusCode int    `json:"statusCode"`
 }
 
 func (q *QuizAPI) GetEmailReport(sessionID string) (string, error) {
-	reqUrl := fmt.Sprintf(q.endpoints.getEmailReport, sessionID)
+	reqUrl := buildGetEmailReportAPIURL(q.endpoints.getEmailReport, sessionID)
 
-	req, err := http.NewRequest(http.MethodPost, reqUrl, nil)
+	// send the request
+	resp, err := q.client.Post(reqUrl, "application/json", nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return "", fmt.Errorf("failed to send request to get email report: %w", err)
 	}
-
-	resp, err := q.client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to get email report: %w", err)
-	}
-
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusAccepted {
-		var errorResp GetEmailReportResponse
-		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err != nil {
-			return "", fmt.Errorf("failed to parse error response body: %w", err)
-		}
-		return "", fmt.Errorf("failed to get email report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
+
+	if err := validateGetEmailReportResponseStatus(resp); err != nil {
+		err = parseGetEmailReportErrorResponse(resp.Body)
+		return "", err
 	}
 
 	return "Email report request accepted", nil
+}
+
+func buildGetEmailReportAPIURL(endpoint, sessionID string) string {
+	return fmt.Sprintf(endpoint, sessionID)
+}
+
+func parseGetEmailReportErrorResponse(body io.ReadCloser) error {
+	var errorResp GetEmailReportErrorResponse
+	if err := json.NewDecoder(body).Decode(&errorResp); err != nil {
+		return fmt.Errorf("failed to parse error response body: %w", err)
+	}
+	return fmt.Errorf("failed to get email report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
+}
+
+func validateGetEmailReportResponseStatus(resp *http.Response) error {
+	if resp.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("not accepted")
+	}
+	return nil
 }

@@ -24,6 +24,7 @@ type App struct {
 
 func NewApp() *App {
 	cfg := LoadConfig()
+
 	quizApi := quizapi.NewQuizAPI(
 		cfg.BaseURL,
 		cfg.ReportServerBaseURL,
