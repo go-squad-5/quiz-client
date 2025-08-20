@@ -3,3 +3,5 @@ bin/
 tmp/
 # ignore cover.out from all directories
 **/cover.out
+# ide
+.idea/

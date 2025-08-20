@@ -40,16 +40,21 @@ func (app *App) ListenForResults() {
 	}
 }
 
+var tmpDirPath string = "./tmp"
+
 func openResultsFile() *os.File {
 	// create a tmp directory if it doesn't exist
-	if _, err := os.Stat("./tmp"); os.IsNotExist(err) {
-		err := os.Mkdir("./tmp", 0755)
+	if _, err := os.Stat(tmpDirPath); err != nil && os.IsNotExist(err) {
+		err := os.Mkdir(tmpDirPath, 0755)
 		if err != nil {
 			panic("Failed to create tmp directory: " + err.Error())
 		}
+	} else if err != nil {
+		panic("Failed to check tmp dir stat")
 	}
+
 	// open the results file
-	file, err := os.Create("./tmp/logs.txt")
+	file, err := os.Create(fmt.Sprintf("%s/logs.txt", tmpDirPath))
 	if err != nil {
 		panic("Failed to create results file: " + err.Error())
 	}

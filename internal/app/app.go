@@ -11,7 +11,7 @@ import (
 type App struct {
 	Config         *Config
 	Wait           *sync.WaitGroup
-	QuizAPI        *quizapi.QuizAPI
+	QuizAPI        quizapi.IQuizAPI
 	Results        chan *Session
 	Errors         chan error
 	ResultListener *sync.WaitGroup

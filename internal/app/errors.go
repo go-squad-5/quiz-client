@@ -30,6 +30,7 @@ func (app *App) ListenForErrors() {
 			app.Results <- &Session{
 				ID:     "",
 				Email:  e.Email,
+				Topic:  e.Topic,
 				Status: STATUS_FAILED,
 				Error:  err,
 			}
