@@ -3,6 +3,7 @@ package quizapi
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 
 	"fmt"
 	"io"
@@ -10,16 +11,18 @@ import (
 	"os"
 )
 
+type GetReportResponseData struct {
+	DocumentID    string `json:"documentId"`
+	FileName      string `json:"fileName"`
+	DownloadURL   string `json:"downloadUrl"`
+	ExpiresAt     string `json:"expiresAt"`
+	ContentBase64 string `json:"contentBase64"`
+}
+
 type GetReportResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Data    struct {
-		DocumentID    string `json:"documentId"`
-		FileName      string `json:"fileName"`
-		DownloadURL   string `json:"downloadUrl"`
-		ExpiresAt     string `json:"expiresAt"`
-		ContentBase64 string `json:"contentBase64"`
-	} `json:"data"`
+	Success bool                  `json:"success"`
+	Message string                `json:"message"`
+	Data    GetReportResponseData `json:"data"`
 }
 
 type GetReportErrorResponse struct {
@@ -37,8 +40,11 @@ func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 	defer resp.Body.Close()
 
 	if err := validateGetReportResponseStatus(resp); err != nil {
-		err = parseGetReportErrorResponse(resp.Body)
-		return "", err
+		errResp, err := parseGetReportErrorResponse(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse error response: %w", err)
+		}
+		return "", errors.New(errResp)
 	}
 
 	file, filePath, err := openSessionReportFile(sessionID)
@@ -47,7 +53,7 @@ func (q *QuizAPI) GetReport(sessionID string) (string, error) {
 	}
 	defer file.Close()
 
-	if err := parseAndSaveBinaryResponse(resp, file); err != nil {
+	if err := saveResponseToFile(resp, file); err != nil {
 		return "", err
 	}
 
@@ -65,24 +71,29 @@ func validateGetReportResponseStatus(resp *http.Response) error {
 	return nil
 }
 
-func parseGetReportErrorResponse(body io.ReadCloser) error {
+func parseGetReportErrorResponse(body io.ReadCloser) (string, error) {
 	var errorResp GetReportErrorResponse
 	if err := json.NewDecoder(body).Decode(&errorResp); err != nil {
-		return fmt.Errorf("failed to parse error response body: %w", err)
+		return "", fmt.Errorf("failed to parse error response body: %w", err)
 	}
-	return fmt.Errorf("failed to get report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
+	if errorResp.StatusCode == 0 {
+		return "", fmt.Errorf("error response should have a valid statusCode")
+	}
+	return fmt.Sprintf("failed to get report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message), nil
 }
+
+var reportsDirPath string = "./tmp/reports"
 
 func openSessionReportFile(sessionId string) (*os.File, string, error) {
 	// create a tmp directory if it doesn't exist
-	if _, err := os.Stat("./tmp/reports"); os.IsNotExist(err) {
-		err := os.MkdirAll("./tmp/reports", 0755)
+	if _, err := os.Stat(reportsDirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(reportsDirPath, 0755)
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to create tmp/reports directory: %w", err)
 		}
 	}
 
-	filePath := fmt.Sprintf("./tmp/reports/%s_report.pdf", sessionId)
+	filePath := fmt.Sprintf("%s/%s_report.pdf", reportsDirPath, sessionId)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create file: %w", err)
@@ -91,7 +102,7 @@ func openSessionReportFile(sessionId string) (*os.File, string, error) {
 	return file, filePath, nil
 }
 
-func parseAndSaveBinaryResponse(resp *http.Response, file *os.File) error {
+func saveResponseToFile(resp *http.Response, file *os.File) error {
 	if _, err := io.Copy(file, resp.Body); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
@@ -105,7 +116,7 @@ func parseAndSaveBinaryResponse(resp *http.Response, file *os.File) error {
 //   return "", fmt.Errorf("failed to parse JSON response: %w", err)
 // }
 //
-// if err := parseAndSaveBase64Response(respJson.Data.ContentBase64, file); err != nil {
+// if err := decodeAndSaveBase64Response(respJson.Data.ContentBase64, file); err != nil {
 // 	 return "", fmt.Errorf("failed to parse base64 response: %w", err)
 // }
 
@@ -117,7 +128,7 @@ func parseJsonGetReportResponse(respBody io.ReadCloser) (GetReportResponse, erro
 	return reportResp, nil
 }
 
-func parseAndSaveBase64Response(base64String string, file *os.File) error {
+func decodeAndSaveBase64Response(base64String string, file *os.File) error {
 	binaryData, err := base64.StdEncoding.DecodeString(base64String)
 	if err != nil {
 		return fmt.Errorf("failed to decode base64 string: %w", err)

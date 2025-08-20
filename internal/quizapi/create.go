@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type CreateSessionAPIRequest struct {
@@ -46,9 +47,19 @@ func (q *QuizAPI) CreateSession(email, topic string) (string, error) {
 	return parseCreateSessionAPIResponse(resp.Body)
 }
 
+func isValidEmail(email string) bool {
+	if i := strings.Index(email, "@"); len(email) < 3 || i < 1 || (i != -1 && !strings.Contains(email[i:], ".")) {
+		return false
+	}
+	return true
+}
+
 func validateCreateSessionInputs(email, topic string) error {
 	if email == "" || topic == "" {
 		return fmt.Errorf("email and topic are required")
+	}
+	if !isValidEmail(email) {
+		return fmt.Errorf("invalid email format: %s", email)
 	}
 	return nil
 }
@@ -77,6 +88,8 @@ func parseCreateSessionAPIResponse(body io.ReadCloser) (string, error) {
 	if err := json.NewDecoder(body).Decode(&response); err != nil {
 		return "", fmt.Errorf("failed to decode response: %v", err)
 	}
-
+	if response.SessionID == "" {
+		return "", fmt.Errorf("session ID is empty in response: %s", response.Message)
+	}
 	return response.SessionID, nil
 }

@@ -48,3 +48,9 @@ var TOPICS []string = []string{
 	"lua",
 	"shell",
 }
+
+func getNumberOfEmailsAndTopics() (emails int, topics int) {
+	emails = len(EMAILS)
+	topics = len(TOPICS)
+	return emails, topics
+}

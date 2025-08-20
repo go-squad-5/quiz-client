@@ -2,6 +2,7 @@ package quizapi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,8 +24,11 @@ func (q *QuizAPI) GetEmailReport(sessionID string) (string, error) {
 	defer resp.Body.Close()
 
 	if err := validateGetEmailReportResponseStatus(resp); err != nil {
-		err = parseGetEmailReportErrorResponse(resp.Body)
-		return "", err
+		errResp, err := parseGetEmailReportErrorResponse(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse error response: %w", err)
+		}
+		return "", errors.New(errResp)
 	}
 
 	return "Email report request accepted", nil
@@ -34,12 +38,12 @@ func buildGetEmailReportAPIURL(endpoint, sessionID string) string {
 	return fmt.Sprintf(endpoint, sessionID)
 }
 
-func parseGetEmailReportErrorResponse(body io.ReadCloser) error {
+func parseGetEmailReportErrorResponse(body io.ReadCloser) (string, error) {
 	var errorResp GetEmailReportErrorResponse
 	if err := json.NewDecoder(body).Decode(&errorResp); err != nil {
-		return fmt.Errorf("failed to parse error response body: %w", err)
+		return "", fmt.Errorf("failed to parse error response body: %w", err)
 	}
-	return fmt.Errorf("failed to get email report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message)
+	return fmt.Sprintf("failed to get email report, status code: %d, message: %s", errorResp.StatusCode, errorResp.Message), nil
 }
 
 func validateGetEmailReportResponseStatus(resp *http.Response) error {

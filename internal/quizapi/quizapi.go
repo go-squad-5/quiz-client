@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+type IQuizAPI interface {
+	CreateSession(email, topic string) (string, error)
+	StartQuiz(sessionId, topic string) ([]Question, error)
+	SubmitQuiz(sessionId string, answers []Answer) (int, error) // Score, error
+	GetReport(sessionId string) (string, error)
+	GetEmailReport(sessionId string) (string, error)
+}
+
 type QuizAPI struct {
 	client    *http.Client
 	endpoints endpoints
