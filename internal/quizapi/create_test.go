@@ -176,3 +176,36 @@ func Test_quizapi_create_CreateSession_WhenInValidInputs(t *testing.T) {
 	_, err := quizClient.CreateSession(email, topic)
 	assert.Error(t, err, "Expected an error when creating session with invalid email")
 }
+
+func Test_quizapi_create_CreateSession_WhenErrorResponse(t *testing.T) {
+	email := "example@abc.com"
+	topic := "math"
+
+	quizClient := NewTestQuizAPI("http://localhost:8080", "http://localhost:8081", func(req *http.Request) *http.Response {
+		assert.Equal(t, req.Method, http.MethodPost)
+		assert.Equal(t, req.URL.String(), "http://localhost:8080/session/create")
+		assert.Equal(t, req.Header.Get("Content-Type"), "application/json")
+		body, err := io.ReadAll(req.Body)
+		assert.NoError(t, err, "Failed to read request body")
+		assert.Equal(t, string(body), fmt.Sprintf(`{"email":"%s","topic":"%s"}`, email, topic))
+		return &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Body:       io.NopCloser(strings.NewReader(`{"session_id": "12345", "message": "success"}`)),
+			Header:     make(http.Header),
+			Request:    req,
+		}
+	})
+
+	_, err := quizClient.CreateSession(email, topic)
+	assert.Error(t, err, "Expected an error when creating session with invalid email")
+	assert.Contains(t, err.Error(), "401", "Expected error message to contain '401' status code")
+}
+
+func Test_quizapi_create_CreateSession_WhenNetworkError(t *testing.T) {
+	quizClient := NewTestQuizAPI("http://localhost:8080", "http://localhost:8081", func(req *http.Request) *http.Response {
+		return nil
+	})
+
+	_, err := quizClient.CreateSession("mohit@mohit.com", "math")
+	assert.Error(t, err, "Expected an error when creating session due to network error")
+}

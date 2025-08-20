@@ -267,3 +267,18 @@ func Test_quizapi_start_StartQuiz_WhenInvalidSuccessResponse(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to decode", "Expected error message to indicate decoding failure - failed to decode")
 	assert.Contains(t, err.Error(), "unexpected EOF", "Expected error message to indicate correct message - unexpected EOF")
 }
+
+func Test_quizapi_start_StartQuiz_WhenNetworkError(t *testing.T) {
+	sessionId := "1234"
+	topic := "math"
+	baseUrl := "http://example.com"
+	reportServerUrl := "http://reportserver.com"
+
+	q := NewTestQuizAPI(baseUrl, reportServerUrl, func(req *http.Request) *http.Response {
+		return nil
+	})
+
+	response, err := q.StartQuiz(sessionId, topic)
+	assert.Error(t, err, "Expected an error when starting quiz with network error")
+	assert.Nil(t, response, "Expected response to be nil when starting quiz with network error")
+}

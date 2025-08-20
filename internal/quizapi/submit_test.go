@@ -243,3 +243,17 @@ func Test_quizapi_submit_SubmitQuiz_WhenErrorStatusCode(t *testing.T) {
 	assert.Equal(t, 0, score, "Expected score to match the zero value for error cases")
 	assert.Contains(t, err.Error(), "401", "Expected error message to indicate the status code 401")
 }
+
+func Test_quizapi_submit_SubmitQuiz_WhenNetworkError(t *testing.T) {
+	sessionId := "session123"
+	answers := []Answer{
+		{QuestionID: "ques1", Answer: "answer1"},
+		{QuestionID: "ques2", Answer: "answer2"},
+	}
+	q := NewTestQuizAPI("http://example.com", "http://report.example.com", func(req *http.Request) *http.Response {
+		return nil
+	})
+	score, err := q.SubmitQuiz(sessionId, answers)
+	assert.Error(t, err, "Expected an error when network request fails")
+	assert.Equal(t, 0, score, "Expected score to be 0 when there is a network error")
+}

@@ -553,3 +553,16 @@ func Test_quizapi_report_GetReport_WhenErrorWithInvalidResponse(t *testing.T) {
 	assert.Empty(t, filePath, "Expected file path to be empty, but got %s", filePath)
 	assert.Contains(t, err.Error(), "failed to parse error response", "Expected error message to contain 'failed to parse error response', but got %s", err.Error())
 }
+
+func Test_quizapi_report_GetReport_WhenNetworkError(t *testing.T) {
+	reportsDirPath = "../../tmp/reports"
+	baseUrl := "http://localhost:3000"
+	reportServerBaseUrl := "http://localhost:3001"
+	ssid := "12345"
+	q := NewTestQuizAPI(baseUrl, reportServerBaseUrl, func(req *http.Request) *http.Response {
+		return nil
+	})
+
+	_, err := q.GetReport(ssid)
+	assert.Error(t, err, "Expected an network error while getting report, but got no error")
+}

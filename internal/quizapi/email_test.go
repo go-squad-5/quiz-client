@@ -54,7 +54,7 @@ func Test_quizapi_email_ValidateGetEmailReportResponseStatus(t *testing.T) {
 	}
 }
 
-func Test_quizapi_email_GetEmailReport_WhenValidSessionID(t *testing.T) {
+func Test_quizapi_email_GetEmailReport_WhenSuccess(t *testing.T) {
 	sessionID := "12345"
 	expectedResponse := "Email report request accepted"
 
@@ -96,4 +96,42 @@ func Test_quizapi_email_GetEmailReport_WhenErrorResponse(t *testing.T) {
 
 	assert.NotNil(t, err, "Expected an error when getting email report")
 	assert.Empty(t, response, "Expected empty response on error")
+}
+
+func Test_quizapi_email_GetEmailReport_WhenInvalidErrorResponse(t *testing.T) {
+	sessionID := "12345"
+	errorResponse := `{"message": "Email report not found", "statusCode"`
+
+	q := NewTestQuizAPI("http://example.com", "http://reportserver.com", func(req *http.Request) *http.Response {
+		assert.Equal(t, http.MethodPost, req.Method, "Expected POST method for GetEmailReport")
+		assert.Equal(t, fmt.Sprintf("http://reportserver.com/sessions/%s/email-report", sessionID), req.URL.String(), "Expected correct URL for GetEmailReport")
+
+		// Simulate an error response
+		return &http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       io.NopCloser(strings.NewReader(errorResponse)),
+			Header:     make(http.Header),
+		}
+	})
+
+	response, err := q.GetEmailReport(sessionID)
+
+	if !assert.Error(t, err, "Expected an error when getting email report") {
+		return
+	}
+	assert.Empty(t, response, "Expected empty response on error")
+	assert.Contains(t, err.Error(), "failed to parse error response", "Expected error message to indicate parsing failure - failed to parse error response")
+	assert.Contains(t, err.Error(), "unexpected EOF", "Expected error message to indicate correct message - unexpected EOF")
+}
+
+func Test_quizapi_email_GetEmailReport_WhenNetworkError(t *testing.T) {
+	sessionID := "12345"
+
+	q := NewTestQuizAPI("http://example.com", "http://reportserver.com", func(req *http.Request) *http.Response {
+		return nil
+	})
+
+	_, err := q.GetEmailReport(sessionID)
+
+	assert.Error(t, err, "Expected an network error when getting email report")
 }
