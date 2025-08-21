@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	"github.com/go-squad-5/quiz-load-test/internal/quizapi/mock"
 )
 
 func NewTestApp() *App {
@@ -16,6 +18,7 @@ func NewTestApp() *App {
 		ReportServerBaseURL: "http://localhost:8070",
 		NumUsers:            10,
 	}
+	quizApi := &mock.MockQuizAPI{}
 	return &App{
 		Config:         &cfg,
 		Wait:           &sync.WaitGroup{},
@@ -27,6 +30,6 @@ func NewTestApp() *App {
 		ErrorLogger:    errorLog,
 		DebugLogger:    debugLog,
 		ResultLogger:   resultLog,
-		// quizapi -> nil -> mock
+		QuizAPI:        quizApi,
 	}
 }

@@ -1,8 +1,11 @@
 package app
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,4 +30,60 @@ func Test_app_Stop(t *testing.T) {
 	require.NotPanics(t, func() {
 		app.Stop()
 	}, "Stop should not panic")
+}
+
+func Test_app_InfoLogger(t *testing.T) {
+	app := NewTestApp()
+
+	var buf bytes.Buffer
+	app.InfoLogger.SetOutput(&buf)
+
+	app.InfoLogger.Print("Hello World")
+	app.InfoLogger.SetOutput(os.Stdout)
+	output := buf.String()
+
+	assert.Containsf(t, output, "INFO\t", "Expected 'INFO' in the log")
+	assert.Containsf(t, output, "Hello World", "Expected 'Hello World' in the log")
+}
+
+func Test_app_ErrorLogger(t *testing.T) {
+	app := NewTestApp()
+
+	var buf bytes.Buffer
+	app.ErrorLogger.SetOutput(&buf)
+
+	app.ErrorLogger.Print("Hello World")
+	app.ErrorLogger.SetOutput(os.Stdout)
+	output := buf.String()
+
+	assert.Containsf(t, output, "ERROR\t", "Expected 'INFO' in the log")
+	assert.Containsf(t, output, "Hello World", "Expected 'Hello World' in the log")
+}
+
+func Test_app_DebugLogger(t *testing.T) {
+	app := NewTestApp()
+
+	var buf bytes.Buffer
+	app.DebugLogger.SetOutput(&buf)
+
+	app.DebugLogger.Print("Hello World")
+	app.DebugLogger.SetOutput(os.Stdout)
+	output := buf.String()
+
+	assert.Containsf(t, output, "DEBUG\t", "Expected 'INFO' in the log")
+	assert.Containsf(t, output, "Hello World", "Expected 'Hello World' in the log")
+}
+
+func Test_app_ResultLogger(t *testing.T) {
+	app := NewTestApp()
+
+	var buf bytes.Buffer
+	app.ResultLogger.SetOutput(&buf)
+
+	app.ResultLogger.Print("Hello World")
+	app.ResultLogger.SetOutput(os.Stdout)
+	output := buf.String()
+
+	assert.Containsf(t, output, "RESULT\t", "Expected 'INFO' in the log")
+	assert.Containsf(t, output, "Hello World", "Expected 'Hello World' in the log")
 }

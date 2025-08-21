@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -40,9 +39,14 @@ func (app *App) SimulateUser(email, topic string) {
 	if err != nil {
 		return
 	}
+	session.SetSession(ssid)
 
 	questions, startQuizTimeTaken, err := app.callStartQuiz(ssid, topic, session)
 	aPIsTimeTaken.SetStartQuizTime(startQuizTimeTaken)
+	if err != nil {
+		return
+	}
+	session.SetQuestions(questions)
 
 	// mark random answers to questions
 	if err := app.markRandomAnswers(questions, session); err != nil {
@@ -64,24 +68,6 @@ func (app *App) SimulateUser(email, topic string) {
 	app.Results <- session
 }
 
-func (app *App) FakeUserAction(email, topic string) {
-	defer app.Wait.Done()
-	log.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
-	startTime := time.Now()
-	time.Sleep(time.Duration(rand.Intn(2)+1) * time.Second)
-	endTime := time.Now()
-
-	app.Results <- &Session{
-		ID:        "somereandomstring",
-		UserID:    "user_" + email,
-		Email:     email,
-		Topic:     topic,
-		Status:    STATUS_COMPLETED,
-		StartTime: startTime.UnixMilli(),
-		EndTime:   endTime.UnixMilli(),
-	}
-}
-
 func (app *App) callCreateSession(email, topic string) (string, int64, error) {
 	app.InfoLogger.Println("Sending Request to create session for email:", email, "on topic:", topic)
 	createStart := time.Now()
@@ -101,6 +87,9 @@ func (app *App) callCreateSession(email, topic string) (string, int64, error) {
 }
 
 func (app *App) callStartQuiz(ssid, topic string, session *Session) ([]quizapi.Question, int64, error) {
+	if session == nil {
+		return nil, 0, fmt.Errorf("sesssion should be non-nil value")
+	}
 	app.InfoLogger.Println("Sending Request to start quiz for session ID:", ssid, "on topic:", topic)
 	startQuizStart := time.Now()
 	questions, err := app.QuizAPI.StartQuiz(ssid, topic)
@@ -108,9 +97,9 @@ func (app *App) callStartQuiz(ssid, topic string, session *Session) ([]quizapi.Q
 	app.InfoLogger.Printf("Got questions for session ID: %s, topic: %s, questions: %d\n", ssid, topic, len(questions))
 	if err != nil {
 		app.ErrorLogger.Printf("Error starting quiz for session ID: %s, topic: %s, error: %v\n", ssid, topic, err)
-		session.Error = err
-		session.Status = STATUS_FAILED
-		session.EndTime = time.Now().UnixMilli()
+		session.SetError(err)
+		session.SetStatus(STATUS_FAILED)
+		session.SetEndTime(time.Now())
 		app.Errors <- &SessionError{
 			Session: session,
 		}
@@ -121,6 +110,12 @@ func (app *App) callStartQuiz(ssid, topic string, session *Session) ([]quizapi.Q
 }
 
 func (app *App) markRandomAnswers(questions []quizapi.Question, session *Session) error {
+	if session == nil {
+		return fmt.Errorf("sesssion should be non-nil value")
+	}
+	if questions == nil {
+		return fmt.Errorf("questions slice should be non-nil")
+	}
 	answers := make([]quizapi.Answer, 0, len(questions))
 	for _, question := range questions {
 		numOptions := len(question.Options)
@@ -145,6 +140,9 @@ func (app *App) markRandomAnswers(questions []quizapi.Question, session *Session
 }
 
 func (app *App) callSubmitQuiz(ssid string, session *Session) (int, int64, error) {
+	if session == nil {
+		return 0, 0, fmt.Errorf("sesssion should be non-nil value")
+	}
 	app.InfoLogger.Println("Sending Request to submit quiz for session ID:", ssid)
 	submitStart := time.Now()
 	score, err := app.QuizAPI.SubmitQuiz(ssid, session.Answers)
@@ -164,6 +162,10 @@ func (app *App) callSubmitQuiz(ssid string, session *Session) (int, int64, error
 }
 
 func (app *App) callReportAndEmailAPIs(session *Session) {
+	if session == nil {
+		panic("session should be non-nil value")
+	}
+
 	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
@@ -191,6 +193,9 @@ func (app *App) callReportAndEmailAPIs(session *Session) {
 }
 
 func (app *App) callGetReport(session *Session) (string, int64, error) {
+	if session == nil {
+		return "", 0, fmt.Errorf("sesssion should be non-nil value")
+	}
 	app.InfoLogger.Println("Sending Request to get report for session ID:", session.ID)
 	reportStart := time.Now()
 	report, err := app.QuizAPI.GetReport(session.ID)
@@ -210,6 +215,9 @@ func (app *App) callGetReport(session *Session) (string, int64, error) {
 }
 
 func (app *App) callGetEmail(session *Session) (int64, error) {
+	if session == nil {
+		return 0, fmt.Errorf("sesssion should be non-nil value")
+	}
 	app.InfoLogger.Println("Sending Request to get email report for session ID:", session.ID)
 	emailStart := time.Now()
 	_, err := app.QuizAPI.GetEmailReport(session.ID)
@@ -226,3 +234,23 @@ func (app *App) callGetEmail(session *Session) (int64, error) {
 	}
 	return emailEnd.UnixMilli() - emailStart.UnixMilli(), nil
 }
+
+// NOTE: FakeUserAction can be used instead of SimulateUser to run the application
+//
+// func (app *App) FakeUserAction(email, topic string) {
+// 	defer app.Wait.Done()
+// 	log.Printf("Simulating user action for email: %s, topic: %s\n", email, topic)
+// 	startTime := time.Now()
+// 	time.Sleep(time.Duration(rand.Intn(2)+1) * time.Second)
+// 	endTime := time.Now()
+//
+// 	app.Results <- &Session{
+// 		ID:        "somereandomstring",
+// 		UserID:    "user_" + email,
+// 		Email:     email,
+// 		Topic:     topic,
+// 		Status:    STATUS_COMPLETED,
+// 		StartTime: startTime.UnixMilli(),
+// 		EndTime:   endTime.UnixMilli(),
+// 	}
+// }

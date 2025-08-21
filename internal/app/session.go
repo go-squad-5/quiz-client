@@ -111,3 +111,7 @@ func (s *Session) SetReport(report string) {
 func (s *Session) SetError(err error) {
 	s.Error = err
 }
+
+func (s *Session) SetQuestions(questions []quizapi.Question) {
+	s.Question = questions
+}

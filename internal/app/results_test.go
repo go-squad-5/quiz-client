@@ -34,7 +34,7 @@ func Test_app_results_OpenResultsFile_WhenDirExist(t *testing.T) {
 }
 
 func Test_app_results_OpenResultsFile_WhenDirNotExist(t *testing.T) {
-	tmpDirPath = "../../tmp" // change path for the test environment
+	tmpDirPath = "../../test" // change path for the test environment
 	expectedFilePath := fmt.Sprintf("%s/logs.txt", tmpDirPath)
 
 	defer func() {
