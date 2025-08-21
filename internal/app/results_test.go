@@ -38,8 +38,8 @@ func Test_app_results_OpenResultsFile_WhenDirNotExist(t *testing.T) {
 	expectedFilePath := fmt.Sprintf("%s/logs.txt", tmpDirPath)
 
 	defer func() {
-		if err := os.Remove(expectedFilePath); err != nil && !os.IsNotExist(err) {
-			t.Fatalf("Error cleaning up the test file: %s", expectedFilePath)
+		if err := os.RemoveAll(tmpDirPath); err != nil && !os.IsNotExist(err) {
+			t.Fatalf("Error cleaning up the test files: %s", expectedFilePath)
 		}
 	}()
 
