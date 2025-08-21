@@ -54,9 +54,25 @@ go tool cover -html=coverage.out
 ```bash
 go test -cover -coverprofile=coverage.out -json ./... | tparse -all
 ```
+> to install tparse: `go install github.com/mfridman/tparse@latest`
 
 ### Running Services:-
 - Session Manager
 - Quiz Master
 - PDF Generator (Report and Email Service)
-> Set the respective urls with ports in order to integrate
+> Set the respective urls with ports in the service's envs in order to integrate all services
+
+
+## Test Coverage Report
+
+| Status | Elapsed | Package                                                | Cover | Pass | Fail | Skip |
+|--------|---------|--------------------------------------------------------|-------|------|------|------|
+| PASS | 0.01s  | github.com/go-squad-5/quiz-load-test/cmd/loadtester     | 0.0%  | 0    | 0    | 0    |
+| PASS | 1.93s  | github.com/go-squad-5/quiz-load-test/internal/app       | 96.9% | 61   | 0    | 0    |
+| PASS | 0.02s  | github.com/go-squad-5/quiz-load-test/internal/quizapi   | 94.0% | 113  | 0    | 0    |
+| PASS | 0.01s  | github.com/go-squad-5/quiz-load-test/internal/quizapi/mock | 0.0%  | 0    | 0    | 0    |
+
+
+## Detailed Coverage Report 
+
+Checkout detailed coverage report at [https://go-squad-5.github.io/quiz-client/coverage](https://go-squad-5.github.io/quiz-client/coverage#file1)
