@@ -81,9 +81,9 @@ func (app *App) callCreateSession(email, topic string) (string, int64, error) {
 			Topic: topic,
 			err:   err,
 		}
-		return "", createEnd.UnixMilli() - createStart.UnixMilli(), err
+		return "", getTimeDiff(createStart, createEnd), err
 	}
-	return ssid, createEnd.UnixMilli() - createStart.UnixMilli(), nil
+	return ssid, getTimeDiff(createStart, createEnd), nil
 }
 
 func (app *App) callStartQuiz(ssid, topic string, session *Session) ([]quizapi.Question, int64, error) {
@@ -103,10 +103,10 @@ func (app *App) callStartQuiz(ssid, topic string, session *Session) ([]quizapi.Q
 		app.Errors <- &SessionError{
 			Session: session,
 		}
-		return nil, startQuizEnd.UnixMilli() - startQuizStart.UnixMilli(), err
+		return nil, getTimeDiff(startQuizStart, startQuizEnd), err
 	}
 	app.InfoLogger.Printf("Quiz started for session ID: %s, topic: %s, questions: %d\n", ssid, topic, len(questions))
-	return questions, startQuizEnd.UnixMilli() - startQuizStart.UnixMilli(), nil
+	return questions, getTimeDiff(startQuizStart, startQuizEnd), nil
 }
 
 func (app *App) markRandomAnswers(questions []quizapi.Question, session *Session) error {
@@ -121,9 +121,9 @@ func (app *App) markRandomAnswers(questions []quizapi.Question, session *Session
 		numOptions := len(question.Options)
 		if numOptions == 0 {
 			app.ErrorLogger.Println("No options available for question ID:", question.ID)
-			session.Error = fmt.Errorf("no options available for question ID: %s", question.ID)
-			session.Status = STATUS_FAILED
-			session.EndTime = time.Now().UnixMilli()
+			session.SetError(fmt.Errorf("no options available for question ID: %s", question.ID))
+			session.SetStatus(STATUS_FAILED)
+			session.SetEndTime(time.Now())
 			app.Errors <- &SessionError{
 				Session: session,
 			}
@@ -150,15 +150,15 @@ func (app *App) callSubmitQuiz(ssid string, session *Session) (int, int64, error
 	app.InfoLogger.Printf("Quiz submitted for session ID: %s, score: %d\n", ssid, score)
 	if err != nil {
 		app.ErrorLogger.Printf("Error submitting quiz for session ID: %s, error: %v\n", ssid, err)
-		session.Status = STATUS_FAILED
-		session.Error = err
-		session.EndTime = time.Now().UnixMilli()
+		session.SetStatus(STATUS_FAILED)
+		session.SetError(err)
+		session.SetEndTime(submitEnd)
 		app.Errors <- &SessionError{
 			Session: session,
 		}
-		return 0, submitEnd.UnixMilli() - submitStart.UnixMilli(), err
+		return 0, getTimeDiff(submitStart, submitEnd), err
 	}
-	return score, submitEnd.UnixMilli() - submitStart.UnixMilli(), nil
+	return score, getTimeDiff(submitStart, submitEnd), nil
 }
 
 func (app *App) callReportAndEmailAPIs(session *Session) {
@@ -209,9 +209,9 @@ func (app *App) callGetReport(session *Session) (string, int64, error) {
 		app.Errors <- &SessionError{
 			Session: session,
 		}
-		return "", reportEnd.UnixMilli() - reportStart.UnixMilli(), err
+		return "", getTimeDiff(reportStart, reportEnd), err
 	}
-	return report, reportEnd.UnixMilli() - reportStart.UnixMilli(), nil
+	return report, getTimeDiff(reportStart, reportEnd), nil
 }
 
 func (app *App) callGetEmail(session *Session) (int64, error) {
@@ -230,9 +230,9 @@ func (app *App) callGetEmail(session *Session) (int64, error) {
 		app.Errors <- &SessionError{
 			Session: session,
 		}
-		return emailEnd.UnixMilli() - emailStart.UnixMilli(), err
+		return getTimeDiff(emailStart, emailEnd), err
 	}
-	return emailEnd.UnixMilli() - emailStart.UnixMilli(), nil
+	return getTimeDiff(emailStart, emailEnd), nil
 }
 
 // NOTE: FakeUserAction can be used instead of SimulateUser to run the application

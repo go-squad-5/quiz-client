@@ -1,5 +1,7 @@
 package app
 
+import "time"
+
 var EMAILS []string = []string{
 	"test1@example.com",
 	"test2@example.com",
@@ -53,4 +55,9 @@ func getNumberOfEmailsAndTopics() (emails int, topics int) {
 	emails = len(EMAILS)
 	topics = len(TOPICS)
 	return emails, topics
+}
+
+// getTimeDiff return difference in milli seconds between t2 and t1 (t2 - t1)
+func getTimeDiff(t1, t2 time.Time) int64 {
+	return int64(t2.Sub(t1).Milliseconds())
 }
