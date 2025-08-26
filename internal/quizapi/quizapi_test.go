@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_quizapi_NewQuizAPI(t *testing.T) {
@@ -12,9 +13,7 @@ func Test_quizapi_NewQuizAPI(t *testing.T) {
 	reportServerUrl := "http://localhost:3001"
 	q := NewQuizAPI(baseUrl, reportServerUrl)
 
-	if !assert.NotNil(t, q, "Expected return value to be not nil, but got nil") {
-		return
-	}
+	require.NotNil(t, q, "Expected return value to be not nil, but got nil")
 
 	assert.Equal(t, 60*time.Second, q.client.Timeout, "Expected client timeout to be 60 seconds, but got %v", q.client.Timeout)
 	assert.Equal(t, baseUrl+"/session/create", q.endpoints.createSession, "Expected createSession endpoint to be %s, but got %s", baseUrl+"/session/create", q.endpoints.createSession)

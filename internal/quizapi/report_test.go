@@ -193,9 +193,7 @@ func Test_quizapi_report_SaveResponseToFile_WhenClosedRespBody(t *testing.T) {
 		defer wg.Done()
 		err = saveResponseToFile(response, w)
 		w.Close()
-		if !assert.Errorf(t, err, "Expected an error while saving to a closed file, but got no error") {
-			return
-		}
+		require.Errorf(t, err, "Expected an error while saving to a closed file, but got no error")
 		assert.Containsf(t, err.Error(), "failed to write file", "Expected error to contain 'failed to write file', got: %s", err.Error())
 		assert.Containsf(t, err.Error(), "closed", "Expected error to contain 'closed', got: %s", err.Error())
 	}()

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_quizapi_submit_ValidateSubmitQuizInputs(t *testing.T) {
@@ -46,9 +47,7 @@ func Test_quizapi_submit_BuildSubmitQuizAPIRequestBody(t *testing.T) {
 
 	body, err := buildSubmitQuizAPIRequestBody(sessionId, answers)
 
-	if !assert.NoError(t, err, "Expected no error while building request body") {
-		return
-	}
+	require.NoError(t, err, "Expected no error while building request body")
 
 	actualBody := body.String()
 	assert.Equal(t, expectedBody, actualBody, "Request body should match expected JSON format")
@@ -168,9 +167,7 @@ func Test_quizapi_submit_SubmitQuiz_WhenInvalidInputs(t *testing.T) {
 
 	score, err := q.SubmitQuiz(sessionId, answers)
 
-	if !assert.Error(t, err, "Expected no error while submitting quiz") {
-		return
-	}
+	require.Error(t, err, "Expected no error while submitting quiz")
 	assert.Equal(t, 0, score, "Expected score to match the zero value for error cases")
 	assert.Contains(t, err.Error(), "SessionID is required")
 }
@@ -202,9 +199,7 @@ func Test_quizapi_submit_SubmitQuiz_WhenInvalidResponse(t *testing.T) {
 
 	score, err := q.SubmitQuiz(sessionId, answers)
 
-	if !assert.Error(t, err, "Expected no error while submitting quiz") {
-		return
-	}
+	require.Error(t, err, "Expected no error while submitting quiz")
 	assert.Equal(t, 0, score, "Expected score to match the zero value for error cases")
 	assert.Contains(t, err.Error(), "failed to decode", "Expected error message to indicate decoding failure - failed to decode")
 	assert.Contains(t, err.Error(), "unexpected EOF", "Expected error message to indicate correct message - unexpected EOF")
@@ -237,9 +232,7 @@ func Test_quizapi_submit_SubmitQuiz_WhenErrorStatusCode(t *testing.T) {
 
 	score, err := q.SubmitQuiz(sessionId, answers)
 
-	if !assert.Error(t, err, "Expected no error while submitting quiz") {
-		return
-	}
+	require.Error(t, err, "Expected error while submitting error quiz")
 	assert.Equal(t, 0, score, "Expected score to match the zero value for error cases")
 	assert.Contains(t, err.Error(), "401", "Expected error message to indicate the status code 401")
 }

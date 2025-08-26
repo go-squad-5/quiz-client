@@ -6,14 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_app_config_LoadConfig_WhenNoEnvs(t *testing.T) {
 	// should set default values in the config struct
 	config := LoadConfig()
-	if !assert.NotNil(t, config, "Expected returned value to be non-nil, but got nil value") {
-		return
-	}
+	require.NotNil(t, config, "Expected returned value to be non-nil, but got nil value")
 
 	defaultBaseUrl := "http://localhost:8080"
 	defaultReportServerUrl := "http://localhost:8070"
@@ -33,9 +32,7 @@ func Test_app_config_LoadConfig_WhenSetEnvs(t *testing.T) {
 
 	// should set os env values in the config struct
 	config := LoadConfig()
-	if !assert.NotNil(t, config, "Expected returned value to be non-nil, but got nil value") {
-		return
-	}
+	require.NotNil(t, config, "Expected returned value to be non-nil, but got nil value")
 
 	assert.Equalf(t, baseUrl, config.BaseURL, "Expected base url to be  value %s, but got %s", baseUrl, config.BaseURL)
 	assert.Equalf(t, reportServerUrl, config.ReportServerBaseURL, "Expected report server base url to be  value %s, but got %s", reportServerUrl, config.ReportServerBaseURL)
@@ -52,9 +49,7 @@ func Test_app_config_LoadConfig_WhenURLsWithTrailingSlash(t *testing.T) {
 
 	// should set os env values in the config struct
 	config := LoadConfig()
-	if !assert.NotNil(t, config, "Expected returned value to be non-nil, but got nil value") {
-		return
-	}
+	require.NotNil(t, config, "Expected returned value to be non-nil, but got nil value")
 
 	assert.Equalf(t, baseUrl, config.BaseURL, "Expected base url to be  value %s, but got %s", baseUrl, config.BaseURL)
 	assert.Equalf(t, reportServerUrl, config.ReportServerBaseURL, "Expected report server base url to be  value %s, but got %s", reportServerUrl, config.ReportServerBaseURL)

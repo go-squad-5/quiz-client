@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_quizapi_email_BuildGetEmailReportAPIURL(t *testing.T) {
@@ -116,9 +117,7 @@ func Test_quizapi_email_GetEmailReport_WhenInvalidErrorResponse(t *testing.T) {
 
 	response, err := q.GetEmailReport(sessionID)
 
-	if !assert.Error(t, err, "Expected an error when getting email report") {
-		return
-	}
+	require.Error(t, err, "Expected an error when getting email report")
 	assert.Empty(t, response, "Expected empty response on error")
 	assert.Contains(t, err.Error(), "failed to parse error response", "Expected error message to indicate parsing failure - failed to parse error response")
 	assert.Contains(t, err.Error(), "unexpected EOF", "Expected error message to indicate correct message - unexpected EOF")
