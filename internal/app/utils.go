@@ -1,6 +1,9 @@
 package app
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 var EMAILS []string = []string{
 	"test1@example.com",
@@ -60,4 +63,16 @@ func getNumberOfEmailsAndTopics() (emails int, topics int) {
 // getTimeDiff return difference in milli seconds between t2 and t1 (t2 - t1)
 func getTimeDiff(t1, t2 time.Time) int64 {
 	return int64(t2.Sub(t1).Milliseconds())
+}
+
+// creates a given directory if it doesn't exist
+func mustInitDir(dirPath string) {
+	if _, err := os.Stat(dirPath); err != nil && os.IsNotExist(err) {
+		err := os.Mkdir(dirPath, 0755)
+		if err != nil {
+			panic("Failed to create directory: " + err.Error())
+		}
+	} else if err != nil {
+		panic("Failed to check dir stat")
+	}
 }

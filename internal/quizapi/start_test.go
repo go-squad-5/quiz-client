@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_quizapi_start_ValidStartQuizInputs(t *testing.T) {
@@ -131,16 +132,12 @@ func Test_quizapi_start_ParseStartQuizResponse(t *testing.T) {
 			body := io.NopCloser(strings.NewReader(tt.responseBody))
 			questions, err := parseStartQuizResponse(body)
 			if tt.expectedError {
-				assert.Error(t, err, "Expected an error for response: %s", tt.responseBody)
-			} else {
-				assert.NoError(t, err, "Did not expect an error for response: %s", tt.responseBody)
-				assert.Equal(t, len(tt.questions), len(questions), "Expected number of questions to match")
-				for i, question := range questions {
-					assert.Equal(t, tt.questions[i].ID, question.ID, "Expected question ID to match")
-					assert.Equal(t, tt.questions[i].Question, question.Question, "Expected question text to match")
-					assert.ElementsMatch(t, tt.questions[i].Options, question.Options, "Expected question options to match")
-				}
+				require.Error(t, err, "Expected an error for response: %s", tt.responseBody)
+				return
 			}
+			require.NoError(t, err, "Did not expect an error for response: %s", tt.responseBody)
+			assert.Equal(t, len(tt.questions), len(questions), "Expected number of questions to match")
+			assert.ElementsMatch(t, tt.questions, questions, "Expected questions list to match")
 		})
 	}
 }

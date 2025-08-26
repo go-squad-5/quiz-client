@@ -44,14 +44,7 @@ var tmpDirPath string = "./tmp"
 
 func openResultsFile() *os.File {
 	// create a tmp directory if it doesn't exist
-	if _, err := os.Stat(tmpDirPath); err != nil && os.IsNotExist(err) {
-		err := os.Mkdir(tmpDirPath, 0755)
-		if err != nil {
-			panic("Failed to create tmp directory: " + err.Error())
-		}
-	} else if err != nil {
-		panic("Failed to check tmp dir stat")
-	}
+	mustInitDir(tmpDirPath)
 
 	// open the results file
 	file, err := os.Create(fmt.Sprintf("%s/logs.txt", tmpDirPath))

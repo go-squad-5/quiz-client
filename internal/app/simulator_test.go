@@ -524,9 +524,7 @@ func Test_app_simulator_StartSimulation(t *testing.T) {
 	app := NewTestApp() // default 10 users
 
 	mockApp, ok := app.QuizAPI.(*mock.MockQuizAPI)
-	if !ok {
-		t.Fatal("Error while getting the mock quizapi")
-	}
+	require.True(t, ok, "Error while getting the mock quizapi")
 
 	for i := range app.Config.NumUsers {
 		email := EMAILS[i%len(EMAILS)]
@@ -563,9 +561,8 @@ func Test_app_simulator_StartSimulation(t *testing.T) {
 	close(app.Errors)
 	// ensure no one sends to errors channel
 	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Expected no panic, but got: %v", r)
-		}
+		r := recover()
+		require.Nilf(t, r, "Expected no panic, but got: %v", r)
 	}()
 
 	done := make(chan int)
@@ -595,7 +592,6 @@ func Test_app_simulator_StartSimulation(t *testing.T) {
 	app.StartSimulation()
 	app.Wait.Wait()
 	close(app.Results)
-	if count := <-done; count != app.Config.NumUsers {
-		t.Errorf("Expected to get %d results, but got %d", app.Config.NumUsers, done)
-	}
+	count := <-done
+	require.Equalf(t, app.Config.NumUsers, count, "Expected to get %d results, but got %d", app.Config.NumUsers, done)
 }

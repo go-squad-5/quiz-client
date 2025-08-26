@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_quizapi_report_BuildGetReportAPIURL(t *testing.T) {
@@ -69,13 +70,12 @@ func Test_quizapi_report_ParseGetReportErrorResponse(t *testing.T) {
 			body := io.NopCloser(strings.NewReader(tt.body))
 			errResp, err := parseGetReportErrorResponse(body)
 			if tt.expectedError {
-				assert.Error(t, err, "Expected an error while parsing response, got nil error")
+				require.Error(t, err, "Expected an error while parsing response, got nil error")
 				return
 			}
-			if assert.NoError(t, err, "Expected no error to be returned, got an error %w", err) {
-				assert.Contains(t, errResp, tt.message)
-				assert.Contains(t, errResp, strconv.Itoa(tt.statusCode))
-			}
+			require.NoError(t, err, "Expected no error to be returned, got an error %w", err)
+			assert.Contains(t, errResp, tt.message)
+			assert.Contains(t, errResp, strconv.Itoa(tt.statusCode))
 		})
 	}
 }
@@ -92,9 +92,7 @@ func Test_quizapi_report_OpenSessionReportFile_WhenDirExist(t *testing.T) {
 	}()
 
 	file, filePath, err := openSessionReportFile(sessionId)
-	if !assert.NoErrorf(t, err, "Expected no error while opening a file, but got error %w", err) {
-		return
-	}
+	require.NoErrorf(t, err, "Expected no error while opening a file, but got error %w", err)
 	defer file.Close()
 
 	assert.NotNil(t, file)
@@ -118,13 +116,27 @@ func Test_quizapi_report_OpenSessionReportFile_WhenDirNotExist(t *testing.T) {
 	}()
 
 	file, filePath, err := openSessionReportFile(sessionId)
-	if !assert.NoErrorf(t, err, "Expected no error while opening a file, but got error %w", err) {
-		return
-	}
+	require.NoErrorf(t, err, "Expected no error while opening a file, but got error %w", err)
 	defer file.Close()
 
 	assert.NotNil(t, file)
 	assert.Equalf(t, expectedFilePath, filePath, "Expected filePath to be correct path in %s/%s_reports.pdf", reportsDirPath, sessionId)
+}
+
+func readFile(r *os.File) (string, error) {
+	res := ""
+	buf := make([]byte, 1)
+	for {
+		_, err := r.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", err
+		}
+		res += string(buf)
+	}
+	return res, nil
 }
 
 func Test_quizapi_report_SaveResponseToFile_ValidFile(t *testing.T) {
@@ -136,9 +148,7 @@ func Test_quizapi_report_SaveResponseToFile_ValidFile(t *testing.T) {
 	// mock file to get the data written
 	t.Log("Creating a os pipe")
 	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Failed to create a read-write pipe for testing")
-	}
+	require.NoError(t, err, "Failed to create a read-write pipe for testing")
 	defer r.Close()
 	defer w.Close()
 
@@ -148,28 +158,15 @@ func Test_quizapi_report_SaveResponseToFile_ValidFile(t *testing.T) {
 		defer wg.Done()
 		err = saveResponseToFile(response, w)
 		w.Close()
-		if !assert.NoErrorf(t, err, "Expected no error while saving response to file, but got error: %w", err) {
-			return
-		}
+		require.NoErrorf(t, err, "Expected no error while saving response to file, but got error: %w", err)
 	}()
 
 	// read data from file
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		res := ""
-		buf := make([]byte, 1)
-		for {
-			_, err := r.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if !assert.NoErrorf(t, err, "Failed to read data from file.") {
-				return
-			}
-			res += string(buf)
-		}
-		r.Close()
+		res, err := readFile(r)
+		require.NoErrorf(t, err, "Failed to read data from file.")
 		assert.Equalf(t, data, res, "Expected written data to the file to be %s, but got %s", data, res)
 	}()
 
@@ -186,9 +183,7 @@ func Test_quizapi_report_SaveResponseToFile_WhenClosedRespBody(t *testing.T) {
 	// mock file to get the data written
 	t.Log("Creating a os pipe")
 	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Failed to create a read-write pipe for testing")
-	}
+	require.NoError(t, err, "Failed to create a read-write pipe for testing")
 	defer r.Close()
 	w.Close() // close early
 
@@ -209,19 +204,8 @@ func Test_quizapi_report_SaveResponseToFile_WhenClosedRespBody(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		res := ""
-		buf := make([]byte, 1)
-		for {
-			_, err := r.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if !assert.NoErrorf(t, err, "Failed to read data from file.") {
-				return
-			}
-			res += string(buf)
-		}
-		r.Close()
+		res, err := readFile(r)
+		require.NoErrorf(t, err, "Failed to read data from file.")
 		assert.NotEqualf(t, data, res, "Expected data to not being written, passed data: %s, written data: %s", data, res)
 	}()
 
@@ -237,9 +221,7 @@ func Test_quizapi_report_SaveResponseToFile_WhenClosedFile(t *testing.T) {
 	// mock file to get the data written
 	t.Log("Creating a os pipe")
 	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Failed to create a read-write pipe for testing")
-	}
+	require.NoError(t, err, "Failed to create a read-write pipe for testing")
 	defer r.Close()
 	w.Close() // close early
 
@@ -249,9 +231,7 @@ func Test_quizapi_report_SaveResponseToFile_WhenClosedFile(t *testing.T) {
 		defer wg.Done()
 		err = saveResponseToFile(response, w)
 		w.Close()
-		if !assert.Errorf(t, err, "Expected an error while saving to a closed file, but got no error") {
-			return
-		}
+		require.Errorf(t, err, "Expected an error while saving to a closed file, but got no error")
 		assert.Containsf(t, err.Error(), "failed to write file", "Expected error to contain 'failed to write file', got: %s", err.Error())
 		assert.Containsf(t, err.Error(), "closed", "Expected error to contain 'closed pipe', got: %s", err.Error())
 	}()
@@ -260,19 +240,8 @@ func Test_quizapi_report_SaveResponseToFile_WhenClosedFile(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		res := ""
-		buf := make([]byte, 1)
-		for {
-			_, err := r.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if !assert.NoErrorf(t, err, "Failed to read data from file.") {
-				return
-			}
-			res += string(buf)
-		}
-		r.Close()
+		res, err := readFile(r)
+		require.NoErrorf(t, err, "Failed to read data from file.")
 		assert.NotEqualf(t, data, res, "Expected data to not being written, passed data: %s, written data: %s", data, res)
 	}()
 
@@ -311,18 +280,17 @@ func Test_quizapi_report_ParseJsonGetReportResponse(t *testing.T) {
 			body := io.NopCloser(strings.NewReader(tt.json))
 			resp, err := parseJsonGetReportResponse(body)
 			if tt.expectedError {
-				assert.Error(t, err, "Expected an error while parsing response, got nil error")
+				require.Error(t, err, "Expected an error while parsing response, got nil error")
 				return
 			}
-			if assert.NoError(t, err, "Expected no error to be returned, got an error %w", err) {
-				assert.Equal(t, tt.data.Success, resp.Success)
-				assert.Equal(t, tt.data.Message, resp.Message)
-				assert.Equal(t, tt.data.Data.DocumentID, resp.Data.DocumentID)
-				assert.Equal(t, tt.data.Data.FileName, resp.Data.FileName)
-				assert.Equal(t, tt.data.Data.DownloadURL, resp.Data.DownloadURL)
-				assert.Equal(t, tt.data.Data.ExpiresAt, resp.Data.ExpiresAt)
-				assert.Equal(t, tt.data.Data.ContentBase64, resp.Data.ContentBase64)
-			}
+			require.NoError(t, err, "Expected no error to be returned, got an error %w", err)
+			assert.Equal(t, tt.data.Success, resp.Success)
+			assert.Equal(t, tt.data.Message, resp.Message)
+			assert.Equal(t, tt.data.Data.DocumentID, resp.Data.DocumentID)
+			assert.Equal(t, tt.data.Data.FileName, resp.Data.FileName)
+			assert.Equal(t, tt.data.Data.DownloadURL, resp.Data.DownloadURL)
+			assert.Equal(t, tt.data.Data.ExpiresAt, resp.Data.ExpiresAt)
+			assert.Equal(t, tt.data.Data.ContentBase64, resp.Data.ContentBase64)
 		})
 
 	}
@@ -333,11 +301,8 @@ func Test_quizapi_report_DecodeBase64Content_ValidContent(t *testing.T) {
 	base64Content := base64.StdEncoding.EncodeToString([]byte(data))
 
 	// mock file to get the data written
-	t.Log("Creating a os pipe")
 	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Failed to create a read-write pipe for testing")
-	}
+	require.NoError(t, err, "Failed to create a read-write pipe for testing")
 	defer r.Close()
 	defer w.Close()
 
@@ -347,28 +312,15 @@ func Test_quizapi_report_DecodeBase64Content_ValidContent(t *testing.T) {
 		defer wg.Done()
 		err = decodeAndSaveBase64Response(base64Content, w)
 		w.Close()
-		if !assert.NoErrorf(t, err, "Expected no error while saving response to file, but got error: %w", err) {
-			return
-		}
+		require.NoErrorf(t, err, "Expected no error while saving response to file, but got error: %w", err)
 	}()
 
 	// read data from file
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		res := ""
-		buf := make([]byte, 1)
-		for {
-			_, err := r.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if !assert.NoErrorf(t, err, "Failed to read data from file.") {
-				return
-			}
-			res += string(buf)
-		}
-		r.Close()
+		res, err := readFile(r)
+		require.NoErrorf(t, err, "Failed to read data from file.")
 		assert.Equalf(t, data, res, "Expected written data to the file to be %s, but got %s", data, res)
 	}()
 
@@ -383,9 +335,7 @@ func Test_quizapi_report_DecodeBase64Content_InvalidContent(t *testing.T) {
 	// mock file to get the data written
 	t.Log("Creating a os pipe")
 	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Failed to create a read-write pipe for testing")
-	}
+	require.NoError(t, err, "Failed to create a read-write pipe for testing")
 	defer r.Close()
 	defer w.Close()
 
@@ -395,28 +345,15 @@ func Test_quizapi_report_DecodeBase64Content_InvalidContent(t *testing.T) {
 		defer wg.Done()
 		err = decodeAndSaveBase64Response(base64Content, w)
 		w.Close()
-		if !assert.Errorf(t, err, "Expected an error while saving invalid response to file, but got no error") {
-			return
-		}
+		require.Errorf(t, err, "Expected an error while saving invalid response to file, but got no error")
 	}()
 
 	// read data from file
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		res := ""
-		buf := make([]byte, 1)
-		for {
-			_, err := r.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if !assert.NoErrorf(t, err, "Failed to read data from file.") {
-				return
-			}
-			res += string(buf)
-		}
-		r.Close()
+		res, err := readFile(r)
+		require.NoErrorf(t, err, "Failed to read data from file.")
 		assert.NotEqualf(t, data, res, "Expected data to not being written, passed data: %s, written data: %s", data, res)
 	}()
 
@@ -430,9 +367,7 @@ func Test_quizapi_report_DecodeBase64Content_WhenClosedFile(t *testing.T) {
 	// mock file to get the data written
 	t.Log("Creating a os pipe")
 	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Failed to create a read-write pipe for testing")
-	}
+	require.NoError(t, err, "Failed to create a read-write pipe for testing")
 	defer r.Close()
 	w.Close() // close early
 
@@ -442,9 +377,7 @@ func Test_quizapi_report_DecodeBase64Content_WhenClosedFile(t *testing.T) {
 		defer wg.Done()
 		err = decodeAndSaveBase64Response(base64Content, w)
 		w.Close()
-		if !assert.Errorf(t, err, "Expected an error while saving to a closed file, but got no error") {
-			return
-		}
+		require.Errorf(t, err, "Expected an error while saving to a closed file, but got no error")
 		assert.Containsf(t, err.Error(), "failed to write file", "Expected error to contain 'failed to write file', got: %s", err.Error())
 		assert.Containsf(t, err.Error(), "closed", "Expected error to contain 'closed', got: %s", err.Error())
 	}()
@@ -453,19 +386,8 @@ func Test_quizapi_report_DecodeBase64Content_WhenClosedFile(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		res := ""
-		buf := make([]byte, 1)
-		for {
-			_, err := r.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if !assert.NoErrorf(t, err, "Failed to read data from file.") {
-				return
-			}
-			res += string(buf)
-		}
-		r.Close()
+		res, err := readFile(r)
+		require.NoErrorf(t, err, "Failed to read data from file.")
 		assert.NotEqualf(t, data, res, "Expected data to not being written, passed data: %s, written data: %s", data, res)
 	}()
 
@@ -491,9 +413,7 @@ func Test_quizapi_report_GetReport_WhenSuccess(t *testing.T) {
 	})
 
 	filePath, err := q.GetReport(ssid)
-	if !assert.NoError(t, err, "Expected no error while getting report, but got error %v", err) {
-		return
-	}
+	require.NoError(t, err, "Expected no error while getting report, but got error %v", err)
 
 	assert.NotEmpty(t, filePath, "Expected file path to be returned, but got empty string")
 	assert.Equalf(t, filePath, fmt.Sprintf("%s/%s_report.pdf", reportsDirPath, ssid), "Expected report file path to match %s/%s_report.pdf, but got %s", reportsDirPath, ssid, filePath)
@@ -518,9 +438,7 @@ func Test_quizapi_report_GetReport_WhenError(t *testing.T) {
 	})
 
 	filePath, err := q.GetReport(ssid)
-	if !assert.Error(t, err, "Expected an error while getting report, but got no error") {
-		return
-	}
+	require.Error(t, err, "Expected an error while getting report, but got no error")
 
 	assert.Empty(t, filePath, "Expected file path to be empty, but got %s", filePath)
 	assert.Contains(t, err.Error(), "400", "Expected error message to contain 'status code 400', but got %s", err.Error())
@@ -546,9 +464,7 @@ func Test_quizapi_report_GetReport_WhenErrorWithInvalidResponse(t *testing.T) {
 	})
 
 	filePath, err := q.GetReport(ssid)
-	if !assert.Error(t, err, "Expected an error while getting report, but got no error") {
-		return
-	}
+	require.Error(t, err, "Expected an error while getting report, but got no error")
 
 	assert.Empty(t, filePath, "Expected file path to be empty, but got %s", filePath)
 	assert.Contains(t, err.Error(), "failed to parse error response", "Expected error message to contain 'failed to parse error response', but got %s", err.Error())

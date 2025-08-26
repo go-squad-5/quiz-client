@@ -63,13 +63,13 @@
 				
 				<option value="file3">github.com/go-squad-5/quiz-load-test/internal/app/errors.go (100.0%)</option>
 				
-				<option value="file4">github.com/go-squad-5/quiz-load-test/internal/app/results.go (93.5%)</option>
+				<option value="file4">github.com/go-squad-5/quiz-load-test/internal/app/results.go (94.7%)</option>
 				
 				<option value="file5">github.com/go-squad-5/quiz-load-test/internal/app/session.go (100.0%)</option>
 				
 				<option value="file6">github.com/go-squad-5/quiz-load-test/internal/app/simulator.go (97.2%)</option>
 				
-				<option value="file7">github.com/go-squad-5/quiz-load-test/internal/app/utils.go (100.0%)</option>
+				<option value="file7">github.com/go-squad-5/quiz-load-test/internal/app/utils.go (90.0%)</option>
 				
 				<option value="file8">github.com/go-squad-5/quiz-load-test/internal/quizapi/create.go (94.1%)</option>
 				
@@ -358,17 +358,10 @@ var tmpDirPath string = "./tmp"
 
 func openResultsFile() *os.File <span class="cov8" title="1">{
         // create a tmp directory if it doesn't exist
-        if _, err := os.Stat(tmpDirPath); err != nil &amp;&amp; os.IsNotExist(err) </span><span class="cov8" title="1">{
-                err := os.Mkdir(tmpDirPath, 0755)
-                if err != nil </span><span class="cov8" title="1">{
-                        panic("Failed to create tmp directory: " + err.Error())</span>
-                }
-        } else<span class="cov8" title="1"> if err != nil </span><span class="cov0" title="0">{
-                panic("Failed to check tmp dir stat")</span>
-        }
+        mustInitDir(tmpDirPath)
 
         // open the results file
-        <span class="cov8" title="1">file, err := os.Create(fmt.Sprintf("%s/logs.txt", tmpDirPath))
+        file, err := os.Create(fmt.Sprintf("%s/logs.txt", tmpDirPath))
         if err != nil </span><span class="cov0" title="0">{
                 panic("Failed to create results file: " + err.Error())</span>
         }
@@ -806,7 +799,10 @@ func (app *App) callGetEmail(session *Session) (int64, error) <span class="cov8"
 		
 		<pre class="file" id="file7" style="display: none">package app
 
-import "time"
+import (
+        "os"
+        "time"
+)
 
 var EMAILS []string = []string{
         "test1@example.com",
@@ -867,6 +863,18 @@ func getNumberOfEmailsAndTopics() (emails int, topics int) <span class="cov8" ti
 func getTimeDiff(t1, t2 time.Time) int64 <span class="cov8" title="1">{
         return int64(t2.Sub(t1).Milliseconds())
 }</span>
+
+// creates a given directory if it doesn't exist
+func mustInitDir(dirPath string) <span class="cov8" title="1">{
+        if _, err := os.Stat(dirPath); err != nil &amp;&amp; os.IsNotExist(err) </span><span class="cov8" title="1">{
+                err := os.Mkdir(dirPath, 0755)
+                if err != nil </span><span class="cov8" title="1">{
+                        panic("Failed to create directory: " + err.Error())</span>
+                }
+        } else<span class="cov8" title="1"> if err != nil </span><span class="cov0" title="0">{
+                panic("Failed to check dir stat")</span>
+        }
+}
 </pre>
 		
 		<pre class="file" id="file8" style="display: none">package quizapi
